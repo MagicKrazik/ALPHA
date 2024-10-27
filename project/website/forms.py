@@ -1,0 +1,100 @@
+# forms.py
+from django import forms
+from django.core.validators import RegexValidator
+
+class MedicRegistrationForm(forms.Form):
+    usuario = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nombre de usuario',
+            'pattern': '^[a-zA-Z0-9._]+$',  # Only allow letters, numbers, dots and underscores
+            'title': 'El usuario solo puede contener letras, números, puntos y guiones bajos'
+        })
+    )
+    
+    nombre = forms.CharField(
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nombres'
+        })
+    )
+    
+    apellidos = forms.CharField(
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Apellidos'
+        })
+    )
+    
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'correo@ejemplo.com'
+        })
+    )
+    
+    telefono = forms.CharField(
+        max_length=15,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Teléfono',
+            'pattern': '^\+?1?\d{9,15}$',
+            'title': 'Ingrese un número de teléfono válido'
+        })
+    )
+    
+    ESPECIALIDADES = [
+        ('anestesiologia', 'Anestesiología'),
+        ('anestesiologia_pediatrica', 'Anestesiología Pediátrica'),
+        ('medicina_critica', 'Medicina Crítica'),
+        ('medicina_del_dolor', 'Medicina del Dolor'),
+        ('otra', 'Otra Especialidad')
+    ]
+    
+    especialidad = forms.ChoiceField(
+        choices=ESPECIALIDADES,
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
+    )
+    
+    password1 = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Contraseña'
+        })
+    )
+    
+    password2 = forms.CharField(
+        label='Confirmar Contraseña',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirmar Contraseña'
+        })
+    )
+    
+    def clean_usuario(self):
+        usuario = self.cleaned_data.get('usuario')
+        if not usuario.isalnum() and not set(usuario) <= set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._'):
+            raise forms.ValidationError('El usuario solo puede contener letras, números, puntos y guiones bajos')
+        return usuario
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError('Las contraseñas no coinciden')
+        
+        return cleaned_data

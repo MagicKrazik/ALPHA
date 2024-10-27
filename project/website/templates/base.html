@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ALPHA Project - Airway Level Protocol and Health Assessment {% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="icon" type="image/png" href="{% static 'images/logo_favicon.png' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <div class="navbar-left">
+                <div class="logo-container">
+                    <a href="{% url 'home' %}" class="logo-box">
+                        <img src="{% static 'images/logo_2.png' %}" alt="ALPHA_logo" class="logo">
+                    </a>
+                </div>
+            </div>
+
+
+            <div class="navbar-right navbar-menu">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'home' %}">Inicio</a>
+                    <div class="dropdown-container">
+                        <a href="#" class="dropdown-toggle">
+                            Pacientes<span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Registar Px</a></li>
+                            <li><a href="#">Formulario PreX</a></li>
+                            <li><a href="#">Formulario PostX</a></li>
+                            <li><a href="#">Consultar Info Px</a></li>
+                        </ul>
+                    </div>
+                    {% if user.is_staff or user.is_staff %}
+                        <a href="#">Panel Admin</a>
+                    {% endif %}
+                    <a href="#">Cerrar Sesión</a>
+                {% else %}
+                    <a href="{% url 'home' %}">Inicio</a>
+                    <a href="{% url 'register' %}">Regístrate</a>
+                    <a href="#">Iniciar Sesión</a>
+                {% endif %}
+            </div>
+
+            <button class="navbar-toggle" aria-label="Toggle navigation">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container" role="main">
+        {% block content %}
+
+        {% endblock %}
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            © Airway Level Protocol and Health Assessment - <a class='aviso-priv-link' href="#"> Aviso de Privacidad.</a> - Desarrollado por <a class='dive-link' href='http://www.dive.it.com'> dive.it.com</a>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/base.js' %}"></script>
+  {% block extra_js %}
+
+  {% endblock %}  
+</body>
+</html>

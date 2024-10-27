@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ALPHA Project - Innovando en Seguridad Anestesiológica{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <!-- Video Background Container -->
+    <div class="hero-video-container">
+        <video class="hero-video" autoplay muted loop playsinline poster="{% static 'images/hero-poster.jpg' %}">
+            <source src="{% static 'videos/medical_bg.mp4' %}" type="video/mp4">
+        </video>
+    </div>
+    
+    <!-- Overlay for better text readability -->
+    <div class="hero-overlay"></div>
+    
+    <!-- Hero Content -->
+    <div class="hero-content container">
+        <h1 class="hero-title" data-aos="fade-up">
+            Construyendo el Futuro de la Anestesiología
+        </h1>
+        <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="100">
+            Únase a la primera fase de ALPHA Project - <strong>Airway Level Protocol And Health Assesment</strong>: creando la base de datos más completa de procedimientos anestesiológicos en Latinoamérica
+        </p>
+        <div class="hero-cta" data-aos="fade-up" data-aos-delay="200">
+            <a href="/registro" class="btn-primary">Participar en el Proyecto</a>
+            <a href="#about" class="btn-secondary">Conocer Más</a>
+        </div>
+    </div>
+</section>
+
+<section id="about" class="mission-section">
+    <div class="container">
+        <h2 class="section-title" data-aos="fade-up">Nuestra Misión</h2>
+        <div class="mission-content" data-aos="fade-up">
+            <br class="mission-text">
+                <strong>ALPHA Project nace con el objetivo de revolucionar la seguridad en procedimientos anestesiológicos mediante el uso de inteligencia artificial y análisis predictivo.</strong>
+                <br></br>
+                Actualmente, nos encontramos en la crucial fase de recopilación de datos que sentará las bases para el desarrollo de modelos predictivos precisos y confiables.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="current-phase-section">
+    <div class="container">
+        <h2 class="section-title" data-aos="fade-up">Fase Actual del Proyecto</h2>
+        <div class="phase-grid">
+            <div class="phase-card active" data-aos="fade-up">
+                <div class="phase-icon">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h3>Fase 1: Recopilación de Datos</h3>
+                <p>2024 - Actual</p>
+                <ul>
+                    <li>Documentación estandarizada de procedimientos</li>
+                    <li>Registro de variables pre-operatorias</li>
+                    <li>Seguimiento de resultados clínicos</li>
+                </ul>
+            </div>
+            <div class="phase-card upcoming" data-aos="fade-up" data-aos-delay="100">
+                <div class="phase-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h3>Fase 2: Desarrollo de IA</h3>
+                <p>Próximamente</p>
+                <ul>
+                    <li>Análisis de patrones y correlaciones</li>
+                    <li>Desarrollo de modelos predictivos</li>
+                    <li>Validación clínica</li>
+                </ul>
+            </div>
+            <div class="phase-card upcoming" data-aos="fade-up" data-aos-delay="200">
+                <div class="phase-icon">
+                    <i class="fas fa-laptop-medical"></i>
+                </div>
+                <h3>Fase 3: Implementación</h3>
+                <p>Futuro</p>
+                <ul>
+                    <li>Herramienta de predicción en tiempo real</li>
+                    <li>Integración con sistemas hospitalarios</li>
+                    <li>Soporte para toma de decisiones</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="benefits-section">
+    <div class="container">
+        <h2 class="section-title" data-aos="fade-up">¿Por Qué Participar Ahora?</h2>
+        <div class="benefits-grid">
+            <div class="benefit-card" data-aos="fade-up">
+                <div class="benefit-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3>Acceso Temprano</h3>
+                <p>Sea parte del grupo pionero que dará forma al futuro de la anestesiología predictiva</p>
+            </div>
+            <div class="benefit-card" data-aos="fade-up" data-aos-delay="100">
+                <div class="benefit-icon">
+                    <i class="fas fa-certificate"></i>
+                </div>
+                <h3>Certificación</h3>
+                <p>Obtenga reconocimiento como colaborador fundador del proyecto</p>
+            </div>
+            <div class="benefit-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="benefit-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Comunidad</h3>
+                <p>Conecte con colegas comprometidos con la innovación en anestesiología</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="participation-section">
+    <div class="container">
+        <div class="participation-header" data-aos="fade-up">
+            <h2 class="section-title">¿Cómo Participar?</h2>
+            <p class="section-subtitle">Tres pasos sencillos para unirse a la innovación en anestesiología</p>
+        </div>
+        
+        <div class="steps-timeline">
+            <div class="timeline-line"></div>
+            
+            <div class="step-card" data-aos="fade-right">
+                <div class="step-icon-wrapper">
+                    <div class="step-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="step-number">1</div>
+                </div>
+                <div class="step-content">
+                    <h3>Regístrese</h3>
+                    <p>Complete el formulario de registro para médicos anestesiólogos</p>
+                    <ul class="step-details">
+                        <li><i class="fas fa-check"></i> Verificación rápida de credenciales</li>
+                        <li><i class="fas fa-check"></i> Proceso 100% en línea</li>
+                        <li><i class="fas fa-check"></i> Soporte personalizado</li>
+                    </ul>
+                    <a href="/registro" class="step-action">Comenzar Registro <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+
+            <div class="step-card" data-aos="fade-left">
+                <div class="step-icon-wrapper">
+                    <div class="step-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="step-number">2</div>
+                </div>
+                <div class="step-content">
+                    <h3>Documente</h3>
+                    <p>Utilice nuestros formularios estandarizados para documentar procedimientos</p>
+                    <ul class="step-details">
+                        <li><i class="fas fa-check"></i> Formularios intuitivos</li>
+                        <li><i class="fas fa-check"></i> Compatibles con estándares internacionales</li>
+                        <li><i class="fas fa-check"></i> Acceso desde cualquier dispositivo</li>
+                    </ul>
+                    <a href="#demo" class="step-action">Ver Demo <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+
+            <div class="step-card" data-aos="fade-right">
+                <div class="step-icon-wrapper">
+                    <div class="step-icon">
+                        <i class="fa fa-users"></i>
+                    </div>
+                    <div class="step-number">3</div>
+                </div>
+                <div class="step-content">
+                    <h3>Contribuya</h3>
+                    <p>Ayude a construir la base de conocimiento que transformará la especialidad</p>
+                    <ul class="step-details">
+                        <li><i class="fas fa-check"></i> Acceso a estadísticas en tiempo real</li>
+                        <li><i class="fas fa-check"></i> Reconocimiento como colaborador</li>
+                        <li><i class="fas fa-check"></i> Participación en publicaciones científicas</li>
+                    </ul>
+                    <a href="#beneficios" class="step-action">Ver Beneficios <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="support-section">
+    <div class="container">
+        <div class="support-content" data-aos="fade-up">
+            <h2>Respaldo Institucional</h2>
+            <p>ALPHA Project cuenta con el apoyo de importantes instituciones médicas y está comprometido con los más altos estándares éticos y de privacidad en el manejo de datos.</p>
+            <div class="support-logos">
+                <img src="/api/placeholder/120/60" alt="Institución 1" class="support-logo">
+                <img src="/api/placeholder/120/60" alt="Institución 2" class="support-logo">
+                <img src="/api/placeholder/120/60" alt="Institución 3" class="support-logo">
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-box" data-aos="fade-up">
+            <h2>Sea Parte del Cambio</h2>
+            <p>Su participación es crucial para el futuro de la anestesiología segura</p>
+            <div class="cta-buttons">
+                <a href="/registro" class="btn-primary">Registrarse Ahora</a>
+                <a href="#contact" class="btn-secondary">Contactar al Equipo</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="{% static 'js/home.js' %}"></script>
+{% endblock %}
