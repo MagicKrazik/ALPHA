@@ -494,6 +494,10 @@
     box-shadow: var(--hover-shadow);
 }
 
+strong.alpha {
+    color:yellow;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .steps-timeline {
