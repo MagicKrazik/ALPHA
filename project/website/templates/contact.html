@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Contacto - ALPHA Project{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/contact.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="contact-section">
+    <div class="container">
+        <div class="contact-header">
+            <h1 class="section-title" data-aos="fade-up">Contacto</h1>
+            <p class="section-subtitle" data-aos="fade-up" data-aos-delay="100">
+                <strong>Estamos aquí para responder sus preguntas y escuchar sus ideas</strong>
+            </p>
+        </div>
+
+        <div class="contact-grid">
+            <!-- Contact Information Card -->
+            <div class="contact-info" data-aos="fade-right">
+                <div class="info-card">
+                    <h2>Información de Contacto</h2>
+                    <p class="info-text">Estamos comprometidos con la innovación en anestesiología y valoramos tu participación.</p>
+                    
+                    <div class="info-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <h3>Email</h3>
+                            <p>{{ company_email }}</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-phone-alt"></i>
+                        <div>
+                            <h3>Teléfono</h3>
+                            <p>{{ company_phone }}</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <h3>Ubicación</h3>
+                            <p>{{ company_address }}</p>
+                        </div>
+                    </div>
+
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Form Card -->
+            <div class="contact-form-container" data-aos="fade-left">
+                <div class="form-card">
+                    <h2>Envíanos un Mensaje</h2>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" class="contact-form">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <span class="error-message">{{ field.errors|join:", " }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <button type="submit" class="submit-button">
+                            <span class="button-text">Enviar Mensaje</span>
+                            <div class="button-loader"></div>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/contact.js' %}"></script>
+{% endblock %}

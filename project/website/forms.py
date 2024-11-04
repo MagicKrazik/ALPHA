@@ -2,6 +2,35 @@
 from django import forms
 from django.core.validators import RegexValidator
 from django.contrib.auth.password_validation import validate_password
+from .models import ContactMessage
+
+class ContactForm(forms.ModelForm):
+    class Meta:
+        model = ContactMessage
+        fields = ['name', 'email', 'phone', 'subject', 'message']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre completo'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'correo@ejemplo.com'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Teléfono (opcional)',
+                'pattern': '^\+?1?\d{9,15}$'
+            }),
+            'subject': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'message': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Escribe tu mensaje aquí...',
+                'rows': 5
+            })
+        }
 
 class MedicRegistrationForm(forms.Form):
     usuario = forms.CharField(

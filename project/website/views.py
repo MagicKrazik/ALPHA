@@ -9,6 +9,9 @@ from django.utils import timezone
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
+from .forms import ContactForm
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 # Home view
@@ -85,3 +88,49 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente.')
     return redirect('home')
+
+# contact form view:
+
+def contact(request):
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            # Save the message
+            contact_message = form.save()
+            
+            # Send email notification
+            subject = f"Nuevo mensaje de contacto - {form.cleaned_data['subject']}"
+            message = f"""
+            Nuevo mensaje de contacto recibido:
+            
+            Nombre: {form.cleaned_data['name']}
+            Email: {form.cleaned_data['email']}
+            Teléfono: {form.cleaned_data['phone']}
+            Asunto: {form.cleaned_data['subject']}
+            Mensaje: {form.cleaned_data['message']}
+            """
+            
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.CONTACT_EMAIL],
+                    fail_silently=False,
+                )
+                messages.success(request, 'Mensaje enviado correctamente. Nos pondremos en contacto pronto.')
+            except Exception as e:
+                messages.warning(request, 'El mensaje se ha guardado pero hubo un problema al enviar la notificación.')
+            
+            return redirect('contact')
+    else:
+        form = ContactForm()
+    
+    context = {
+        'form': form,
+        'company_email': 'contacto@alphaproject.com',  # Dummy email
+        'company_phone': '+52 (555) 123-4567',  # Dummy phone
+        'company_address': 'Ciudad de México, México'  # Dummy address
+    }
+    
+    return render(request, 'contact.html', context)

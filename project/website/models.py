@@ -10,6 +10,31 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
 
+class ContactMessage(models.Model):
+    SUBJECT_CHOICES = [
+        ('general', 'Consulta General'),
+        ('technical', 'Soporte Técnico'),
+        ('collaboration', 'Propuesta de Colaboración'),
+        ('other', 'Otro')
+    ]
+
+    name = models.CharField(_('nombre'), max_length=100)
+    email = models.EmailField(_('correo electrónico'))
+    phone = models.CharField(_('teléfono'), max_length=20, blank=True)
+    subject = models.CharField(_('asunto'), max_length=20, choices=SUBJECT_CHOICES)
+    message = models.TextField(_('mensaje'))
+    created_at = models.DateTimeField(_('fecha de envío'), auto_now_add=True)
+    is_read = models.BooleanField(_('leído'), default=False)
+
+    class Meta:
+        verbose_name = _('Mensaje de Contacto')
+        verbose_name_plural = _('Mensajes de Contacto')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.subject} - {self.name} ({self.created_at.strftime('%d/%m/%Y')})"
+
+
 class MedicoUser(AbstractUser):
     """
     Custom user model for medical professionals participating in the ALPHA Project.

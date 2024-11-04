@@ -26,33 +26,7 @@ SECRET_KEY = 'django-insecure-0*d9%)=-$n&$p()%_1ea6q9+#$u0_4-0xve&a8j!s)3gl9cxax
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-if DEBUG:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-    # Development settings
-    SECURE_SSL_REDIRECT = False
-    SECURE_PROXY_SSL_HEADER = None
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    SECURE_HSTS_SECONDS = None
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    SECURE_HSTS_PRELOAD = False
-    SECURE_BROWSER_XSS_FILTER = False
-    SECURE_CONTENT_TYPE_NOSNIFF = False
-    
-    # Use console backend for development
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    # Production settings - keep your existing production settings
-    pass
-
-# Remove or comment out these lines from the bottom of settings.py
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-# SECURE_SSL_REDIRECT = True
-# SECURE_HSTS_SECONDS = 31536000
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
-
+ALLOWED_HOSTS = []
 
 # Application definition
 
@@ -164,14 +138,13 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
-# Email settings - Use console backend for development
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = 'carlos.horacio.olivares@gmail.com'
-    EMAIL_HOST_PASSWORD = 'yscm vwgx mste oojg'
 
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Or your email provider's SMTP server
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'carlos.horacio.olivares@gmail.com'  # Your email address
+EMAIL_HOST_PASSWORD = 'jdflsajdflksajfkslajdf'  # Your email password or app-specific password
+DEFAULT_FROM_EMAIL = 'carlos.horacio.olivares@gmail.com'
+CONTACT_EMAIL = 'carlos.horacio.olivares@gmail.com'  # Email where contact form submissions will be sent

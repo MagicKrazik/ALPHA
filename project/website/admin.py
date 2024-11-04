@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 from .models import MedicoUser
+from .models import ContactMessage
 
 @admin.register(MedicoUser)
 class MedicoUserAdmin(UserAdmin):
@@ -23,3 +24,18 @@ class MedicoUserAdmin(UserAdmin):
     )
     search_fields = ('username', 'nombre', 'apellidos', 'email')
     ordering = ('username',)
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'subject', 'created_at', 'is_read')
+    list_filter = ('subject', 'is_read', 'created_at')
+    search_fields = ('name', 'email', 'message')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at',)
+    
+    def mark_as_read(self, request, queryset):
+        queryset.update(is_read=True)
+    mark_as_read.short_description = "Mark selected messages as read"
+    
+    actions = ['mark_as_read']    
