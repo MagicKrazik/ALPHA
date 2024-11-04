@@ -39,11 +39,11 @@
                     {% if user.is_staff or user.is_staff %}
                         <a href="#">Panel Admin</a>
                     {% endif %}
-                    <a href="#">Cerrar Sesión</a>
+                    <a href="{% url 'logout' %}" class="nav-link">Cerrar Sesión</a>
                 {% else %}
                     <a href="{% url 'home' %}">Inicio</a>
-                    <a href="{% url 'register' %}">Regístrate</a>
-                    <a href="#">Iniciar Sesión</a>
+                    <a href="{% url 'register' %}" class="nav-link">Regístrate</a>
+                    <a href="{% url 'login' %}" class="nav-link">Iniciar Sesión</a>
                 {% endif %}
             </div>
 

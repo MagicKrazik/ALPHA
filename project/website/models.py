@@ -4,6 +4,10 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
 
 
 class MedicoUser(AbstractUser):
@@ -12,7 +16,6 @@ class MedicoUser(AbstractUser):
     """
     username_validator = UnicodeUsernameValidator()
 
-    # Override username field
     username = models.CharField(
         _('usuario'),
         max_length=150,
@@ -24,7 +27,6 @@ class MedicoUser(AbstractUser):
         },
     )
 
-    # Override email field to make it required and unique
     email = models.EmailField(
         _('email address'),
         unique=True,
@@ -64,17 +66,6 @@ class MedicoUser(AbstractUser):
         choices=Especialidad.choices,
         default=Especialidad.ANESTESIOLOGIA,
     )
-    
-    is_verified = models.BooleanField(
-        _('verificado'),
-        default=False,
-    )
-    
-    date_verified = models.DateTimeField(
-        _('fecha de verificación'),
-        null=True,
-        blank=True,
-    )
 
     class Meta:
         verbose_name = _('médico')
@@ -86,23 +77,6 @@ class MedicoUser(AbstractUser):
     
     def get_full_name(self):
         return f"{self.nombre} {self.apellidos}"
-    
-    @property
-    def is_profile_complete(self):
-        """
-        Checks if all required profile fields are filled.
-        """
-        required_fields = [
-            self.nombre,
-            self.apellidos,
-            self.email,
-            self.telefono,
-            self.especialidad,
-            self.cedula_profesional,
-            self.institucion
-        ]
-        return all(required_fields)
-
 
 class PreSurgeryForm(models.Model):
     """

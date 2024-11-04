@@ -1,6 +1,7 @@
 # forms.py
 from django import forms
 from django.core.validators import RegexValidator
+from django.contrib.auth.password_validation import validate_password
 
 class MedicRegistrationForm(forms.Form):
     usuario = forms.CharField(
@@ -88,6 +89,14 @@ class MedicRegistrationForm(forms.Form):
         if not usuario.isalnum() and not set(usuario) <= set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._'):
             raise forms.ValidationError('El usuario solo puede contener letras, números, puntos y guiones bajos')
         return usuario
+    
+    def clean_password1(self):
+        password1 = self.cleaned_data.get('password1')
+        try:
+            validate_password(password1)
+        except forms.ValidationError as error:
+            raise forms.ValidationError(error)
+        return password1
     
     def clean(self):
         cleaned_data = super().clean()

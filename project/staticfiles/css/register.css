@@ -150,25 +150,6 @@ select.form-control {
     border: 1px solid rgba(231, 76, 60, 0.2);
 }
 
-/* Password Strength Indicator */
-.password-strength {
-    height: 4px;
-    background: #e2e8f0;
-    border-radius: 2px;
-    margin-top: 0.5rem;
-    overflow: hidden;
-}
-
-.password-strength-bar {
-    height: 100%;
-    width: 0;
-    transition: width 0.3s ease, background-color 0.3s ease;
-}
-
-.strength-weak { width: 33%; background-color: var(--error-color); }
-.strength-medium { width: 66%; background-color: #f1c40f; }
-.strength-strong { width: 100%; background-color: var(--success-color); }
-
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .registration-section {

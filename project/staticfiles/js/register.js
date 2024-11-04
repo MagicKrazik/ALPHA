@@ -1,28 +1,27 @@
-// static/js/register.js
-
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('registrationForm');
     const passwordInput = document.getElementById('id_password1');
     const confirmPasswordInput = document.getElementById('id_password2');
     const usuarioInput = document.getElementById('id_usuario');
-    const submitButton = document.querySelector('.form-submit');
-    
+    const submitButton = document.querySelector('.register-btn');
+
+    if (!form || !submitButton) {
+        console.error('Required elements not found');
+        return;
+    }
+
     // Password strength indicator
     function checkPasswordStrength(password) {
         let strength = 0;
         
         // Length check
         if (password.length >= 8) strength += 1;
-        
         // Contains numbers
         if (/\d/.test(password)) strength += 1;
-        
         // Contains lowercase
         if (/[a-z]/.test(password)) strength += 1;
-        
         // Contains uppercase
         if (/[A-Z]/.test(password)) strength += 1;
-        
         // Contains special characters
         if (/[^A-Za-z0-9]/.test(password)) strength += 1;
         
@@ -30,26 +29,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updatePasswordStrength() {
+        if (!passwordInput) return;
+        
         const password = passwordInput.value;
         const strength = checkPasswordStrength(password);
         const strengthIndicator = document.getElementById('passwordStrength');
         
         if (!strengthIndicator) return;
         
+        const strengthBar = document.createElement('div');
+        strengthBar.className = 'password-strength-bar';
+        strengthIndicator.innerHTML = '';
+        strengthIndicator.appendChild(strengthBar);
+        
         if (strength < 2) {
-            strengthIndicator.textContent = 'Débil';
-            strengthIndicator.className = 'password-strength strength-weak';
+            strengthBar.className = 'password-strength-bar strength-weak';
         } else if (strength < 4) {
-            strengthIndicator.textContent = 'Media';
-            strengthIndicator.className = 'password-strength strength-medium';
+            strengthBar.className = 'password-strength-bar strength-medium';
         } else {
-            strengthIndicator.textContent = 'Fuerte';
-            strengthIndicator.className = 'password-strength strength-strong';
+            strengthBar.className = 'password-strength-bar strength-strong';
         }
     }
     
-    // Real-time username validation
+    // Username validation
     function validateUsername() {
+        if (!usuarioInput) return;
+        
         const username = usuarioInput.value;
         const regex = /^[a-zA-Z0-9._]+$/;
         
@@ -62,6 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Password match validation
     function validatePasswordMatch() {
+        if (!passwordInput || !confirmPasswordInput) return;
+        
         if (passwordInput.value !== confirmPasswordInput.value) {
             confirmPasswordInput.setCustomValidity('Las contraseñas no coinciden');
         } else {
@@ -69,70 +76,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Form validation
-    function validateForm() {
-        const isValid = form.checkValidity();
-        submitButton.disabled = !isValid;
-        return isValid;
-    }
-    
-    // Event listeners
+    // Add event listeners
     if (passwordInput) {
         passwordInput.addEventListener('input', () => {
             updatePasswordStrength();
             validatePasswordMatch();
-            validateForm();
         });
     }
     
     if (confirmPasswordInput) {
-        confirmPasswordInput.addEventListener('input', () => {
-            validatePasswordMatch();
-            validateForm();
-        });
+        confirmPasswordInput.addEventListener('input', validatePasswordMatch);
     }
     
     if (usuarioInput) {
-        usuarioInput.addEventListener('input', () => {
-            validateUsername();
-            validateForm();
-        });
+        usuarioInput.addEventListener('input', validateUsername);
     }
-    
-    // Toggle password visibility
-    const togglePassword = document.querySelectorAll('.toggle-password');
-    togglePassword.forEach(button => {
-        button.addEventListener('click', function() {
-            const input = this.previousElementSibling;
-            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-            input.setAttribute('type', type);
-            
-            // Update icon
-            const icon = this.querySelector('i');
-            if (type === 'password') {
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        });
-    });
     
     // Form submission
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        if (validateForm()) {
-            // Show loading state
+        if (this.checkValidity()) {
             submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
-            
-            // Submit the form
+            submitButton.innerHTML = 'Registrando...';
             this.submit();
         }
     });
-    
-    // Initialize form validation
-    validateForm();
 });

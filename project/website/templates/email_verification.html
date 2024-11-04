@@ -1,0 +1,4 @@
+<!-- templates/registration/email_verification.html -->
+<a href="{{ protocol }}://{{ domain }}{% url 'activate' uidb64=uid token=token %}" class="button">
+    Activar mi cuenta
+</a>
