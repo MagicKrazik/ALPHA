@@ -384,3 +384,52 @@ input[type="file"] {
         display: none;
     }
 }
+
+/* Add to both postsurgery_form.css and presurgery_form.css */
+/* Help Text Styling */
+.help-text {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-top: 0.25rem;
+}
+
+/* Required Field Indicator */
+.required-field::after {
+    content: '*';
+    color: var(--error-color);
+    margin-left: 0.25rem;
+}
+
+/* Field States */
+.field-success {
+    border-color: var(--success-color) !important;
+}
+
+.field-warning {
+    border-color: var(--warning-color) !important;
+}
+
+/* Add consistent transitions */
+.form-section,
+input,
+select,
+textarea,
+.btn {
+    transition: all 0.3s ease;
+}
+
+/* Add to postsurgery_form.css */
+.help-text {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.required-field label::after {
+    content: '*';
+    color: var(--error-color);
+    margin-left: 0.25rem;
+}

@@ -83,24 +83,22 @@
                     <div class="forms-card aos-init aos-animate" data-aos="fade-up">
                         <h3>Formularios Post-Cirugía</h3>
                         
-                        {% if presurgery_forms %}
-                            {% if postsurgery_forms %}
-                                <div class="forms-grid">
-                                    {% for form in postsurgery_forms %}
-                                        <div class="form-item">
-                                            <div class="form-status">
-                                                <span class="status-badge complete">
-                                                    <i class="fas fa-check-circle"></i> Completado
-                                                </span>
-                                                <span class="form-date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
-                                                <a href="{% url 'postsurgery-detail' form.folio_hospitalizacion.folio_hospitalizacion %}"
-                                                   class="btn btn-info">
-                                                    <i class="fas fa-file-medical"></i> Ver Formulario Post-Cirugía
-                                                </a>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
+                        {% if presurgery_forms %} 
+                        {% if postsurgery_forms %}
+                        <div class="forms-grid">
+                            {% for form in postsurgery_forms %}
+                            <div class="form-item">
+                                <div class="form-status">
+                                    <span class="status-badge complete">Completado</span>
+                                    <!-- Fix the date display -->
+                                    <span class="form-date">{{ form.folio_hospitalizacion.fecha_reporte|date:"d/m/Y" }}</span>
+                                    <a href="{% url 'postsurgery-detail' form.folio_hospitalizacion.folio_hospitalizacion %}" class="btn btn-info">
+                                        Ver Formulario Post-Cirugía
+                                    </a>
                                 </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                             {% else %}
                                 <div class="no-forms-message">
                                     No hay formularios post-cirugía registrados
@@ -111,13 +109,13 @@
                                     </a>
                                 </div>
                             {% endif %}
-                        {% else %}
+                            {% else %}
                             <div class="no-forms-message">
                                 Se requiere formulario pre-cirugía antes de crear post-cirugía
                             </div>
-                        {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
 
             <!-- Action Buttons -->
             <div class="detail-actions">

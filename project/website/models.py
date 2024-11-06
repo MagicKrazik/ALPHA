@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.conf import settings
 from django.db.models.signals import post_save
@@ -367,27 +368,28 @@ class PostDuringSurgeryForm(models.Model):
         PreSurgeryForm,
         on_delete=models.CASCADE,
         primary_key=True,
-        verbose_name="Folio Hospitalización"
+        verbose_name="Folio Hospitalización",
+        related_name='post_surgery_form'  # Add this if not present
     )
     
     # Location and Personnel
-    lugar_problema = models.CharField(
+    lugar_problema = models.CharField( #check
         max_length=200,
         verbose_name="Lugar o Área del Problema"
     )
-    presencia_anestesiologo = models.BooleanField(
+    presencia_anestesiologo = models.BooleanField( #check
         verbose_name="Presencia de Anestesiólogo"
     )
     
     # Equipment and Techniques
-    tecnica_utilizada = models.CharField(
+    tecnica_utilizada = models.CharField( #check
         max_length=200,
         verbose_name="Técnica Utilizada"
     )
-    carro_via_aerea = models.BooleanField(
+    carro_via_aerea = models.BooleanField( #check
         verbose_name="Carro de Vía Aérea Difícil Disponible"
     )
-    tipo_video_laringoscopia = models.CharField(
+    tipo_video_laringoscopia = models.CharField( #check 
         max_length=100,
         blank=True,
         verbose_name="Tipo de Video-laringoscopía"
@@ -399,117 +401,117 @@ class PostDuringSurgeryForm(models.Model):
     )
     
     # Classifications and Measurements
-    clasificacion_han = models.IntegerField(
+    clasificacion_han = models.IntegerField( #check
         choices=HAN_CHOICES,
         validators=[MinValueValidator(0), MaxValueValidator(4)],
         verbose_name="Clasificación HAN"
     )
-    aditamento_via_aerea = models.CharField(
+    aditamento_via_aerea = models.CharField( #check
         max_length=200,
         verbose_name="Aditamento de Vía Aérea"
     )
-    tiempo_preoxigenacion = models.IntegerField(
+    tiempo_preoxigenacion = models.IntegerField( #check
         verbose_name="Tiempo de Pre-oxigenación (minutos)"
     )
     
     # Supraglottic Device
-    uso_supraglotico = models.BooleanField(
+    uso_supraglotico = models.BooleanField( #check
         verbose_name="Uso de Supraglótico"
     )
-    tipo_supraglotico = models.CharField(
+    tipo_supraglotico = models.CharField( #check
         max_length=100,
         blank=True,
         verbose_name="Tipo de Supraglótico"
     )
-    problemas_supragloticos = models.TextField(
+    problemas_supragloticos = models.TextField( #check
         blank=True,
         verbose_name="Problemas con Supraglóticos"
     )
     
     # Intubation Details
-    tipo_intubacion = models.CharField(
+    tipo_intubacion = models.CharField( #check
         max_length=100,
         verbose_name="Tipo de Intubación"
     )
-    numero_intentos = models.IntegerField(
+    numero_intentos = models.IntegerField( #check
         validators=[MinValueValidator(1)],
         verbose_name="Número de Intentos"
     )
-    laringoscopia_directa = models.TextField(
+    laringoscopia_directa = models.TextField( #check
         verbose_name="Laringoscopía Directa"
     )
-    cormack = models.IntegerField(
+    cormack = models.IntegerField( #check
         choices=CORMACK_CHOICES,
         validators=[MinValueValidator(1), MaxValueValidator(4)],
         verbose_name="Cormack"
     )
-    pogo = models.FloatField(
+    pogo = models.FloatField( #check
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         verbose_name="POGO (%)"
     )
     
     # Additional Procedures
-    intubacion_tecnica_mixta = models.CharField(
+    intubacion_tecnica_mixta = models.CharField(  #check
         max_length=200,
         blank=True,
         verbose_name="Intubación Técnica Mixta"
     )
-    intubacion_despierto = models.BooleanField(
+    intubacion_despierto = models.BooleanField( #check
         verbose_name="Intubación Despierto"
     )
-    descripcion_intubacion_despierto = models.TextField(
+    descripcion_intubacion_despierto = models.TextField( #check
         blank=True,
         verbose_name="Descripción Intubación Despierto"
     )
     
     # Anesthesia Details
-    tipo_anestesia = models.CharField(
+    tipo_anestesia = models.CharField( #check
         max_length=200,
         verbose_name="Tipo de Anestesia"
     )
-    sedacion = models.CharField(
+    sedacion = models.CharField( #check
         max_length=200,
         verbose_name="Sedación"
     )
-    observaciones = models.TextField(
+    observaciones = models.TextField( # no salio en la pagina
         blank=True,
         verbose_name="Observaciones"
     )
-    cooperacion_paciente = models.CharField(
+    cooperacion_paciente = models.CharField( #check
         max_length=200,
         verbose_name="Cooperación del Paciente"
     )
     
     # Emergency Procedures
-    algoritmo_no_intubacion = models.BooleanField(
+    algoritmo_no_intubacion = models.BooleanField( # no salio en la pagina
         verbose_name="Algoritmo No Intubación"
     )
-    crico_tiroidotomia = models.BooleanField(
+    crico_tiroidotomia = models.BooleanField( # no salio en la pagina
         verbose_name="Crico-tiroidotomía"
     )
-    traqueostomia_percutanea = models.BooleanField(
+    traqueostomia_percutanea = models.BooleanField( # no salio en la pagina
         verbose_name="Traqueostomía Percutánea"
     )
     
     # Outcomes
-    complicaciones = models.TextField(
+    complicaciones = models.TextField( #check
         blank=True,
         verbose_name="Complicaciones"
     )
-    resultado_final = models.TextField(
+    resultado_final = models.TextField( #check
         verbose_name="Resultado Final"
     )
     
     # Media
-    fotos_videos = models.FileField(
+    fotos_videos = models.FileField( # no salio en la pagina
         upload_to='fotos_videos_cirugia/',
         blank=True,
         verbose_name="Fotos o Videos Relacionados"
     )
     
     # Morbidity and Mortality
-    morbilidad = models.BooleanField(default=False)
-    descripcion_morbilidad = models.TextField(
+    morbilidad = models.BooleanField(default=False) 
+    descripcion_morbilidad = models.TextField( #check
         blank=True,
         verbose_name="Descripción Morbilidad"
     )
@@ -520,19 +522,19 @@ class PostDuringSurgeryForm(models.Model):
     )
     
     # Medical Personnel
-    nombre_anestesiologo = models.CharField(
+    nombre_anestesiologo = models.CharField( #check
         max_length=200,
         verbose_name="Nombre del Anestesiólogo"
     )
-    cedula_profesional = models.CharField(
+    cedula_profesional = models.CharField( #check
         max_length=50,
         verbose_name="Cédula Profesional"
     )
-    especialidad = models.CharField(
+    especialidad = models.CharField( #check
         max_length=100,
         verbose_name="Especialidad"
     )
-    nombre_residente = models.CharField(
+    nombre_residente = models.CharField( #check
         max_length=200,
         verbose_name="Nombre del Residente"
     )
@@ -543,3 +545,25 @@ class PostDuringSurgeryForm(models.Model):
     class Meta:
         verbose_name = _("Post-During Surgery Form")
         verbose_name_plural = _("Post-During Surgery Forms")
+
+    @property
+    def patient(self):
+        """Get the related patient"""
+        return Patient.objects.get(folio_hospitalizacion=self.folio_hospitalizacion.folio_hospitalizacion.replace('PRE-', ''))    
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        # Ensure the folio_hospitalizacion is properly set
+        if self.folio_hospitalizacion:
+            try:
+                patient = Patient.objects.get(
+                    folio_hospitalizacion=self.folio_hospitalizacion.folio_hospitalizacion.replace('PRE-', '')
+                )
+            except Patient.DoesNotExist:
+                raise ValidationError('No se encontró el paciente relacionado.')
+        return cleaned_data
+
+    def save(self, *args, **kwargs):
+        # Ensure the form is valid before saving
+        self.full_clean()
+        return super().save(*args, **kwargs)

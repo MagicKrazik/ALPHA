@@ -11,24 +11,23 @@
 {% block content %}
 <div class="section surgery-detail-section">
     <div class="container">
-        <!-- Header -->
-        <div class="detail-header" data-aos="fade-up">
+        <!-- Header Section -->
+        <div class="detail-header" aos="fade-up">
             <h1 class="detail-title">Evaluación Post-Quirúrgica</h1>
             <div class="patient-meta">
-                <h2>{{ form.nombres }} {{ form.apellidos }}</h2>
-                <p class="folio">Folio: {{ form.folio_hospitalizacion }}</p>
-                <p class="date">Fecha de Reporte: {{ form.fecha_reporte|date:"d/m/Y" }}</p>
+                <h2>{{ form.folio_hospitalizacion.nombres }} {{ form.folio_hospitalizacion.apellidos }}</h2>
+                <p>Folio: {{ form.folio_hospitalizacion.folio_hospitalizacion }}</p>
+                <p>Fecha del Procedimiento: {{ form.folio_hospitalizacion.fecha_reporte|date:"d/m/Y" }}</p>
             </div>
         </div>
 
-        <!-- Content Grid -->
         <div class="detail-grid">
-            <!-- Localización y Personal -->
-            <div class="detail-card" data-aos="fade-up">
-                <h3>Localización y Personal</h3>
+            <!-- Location and Personnel -->
+            <div class="detail-card" aos="fade-up">
+                <h3>Ubicación y Personal</h3>
                 <div class="info-grid">
                     <div class="info-item">
-                        <label>Lugar del Problema:</label>
+                        <label>Lugar del Procedimiento:</label>
                         <span>{{ form.lugar_problema }}</span>
                     </div>
                     <div class="info-item">
@@ -37,12 +36,30 @@
                             {{ form.presencia_anestesiologo|yesno:"Sí,No" }}
                         </span>
                     </div>
+                    <div class="info-item">
+                        <label>Nombre del Anestesiólogo:</label>
+                        <span>{{ form.nombre_anestesiologo }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Cédula Profesional:</label>
+                        <span>{{ form.cedula_profesional }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Especialidad:</label>
+                        <span>{{ form.especialidad }}</span>
+                    </div>
+                    {% if form.nombre_residente %}
+                    <div class="info-item">
+                        <label>Residente:</label>
+                        <span>{{ form.nombre_residente }}</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Equipamiento y Técnicas -->
-            <div class="detail-card" data-aos="fade-up" data-aos-delay="100">
-                <h3>Equipamiento y Técnicas</h3>
+            <!-- Equipment and Techniques -->
+            <div class="detail-card" aos="fade-up" aos-delay="100">
+                <h3>Equipo y Técnicas</h3>
                 <div class="info-grid">
                     <div class="info-item">
                         <label>Técnica Utilizada:</label>
@@ -50,14 +67,16 @@
                     </div>
                     <div class="info-item">
                         <label>Carro de Vía Aérea Difícil:</label>
-                        <span class="status-indicator {% if form.carro_via_aerea %}positive{% else %}negative{% endif %}">
+                        <span class="status-indicator {% if form.carro_via_aerea %}positive{% else %}warning{% endif %}">
                             {{ form.carro_via_aerea|yesno:"Disponible,No Disponible" }}
                         </span>
                     </div>
+                    {% if form.tipo_video_laringoscopia %}
                     <div class="info-item">
                         <label>Tipo de Video-laringoscopía:</label>
-                        <span>{{ form.tipo_video_laringoscopia|default:"No especificado" }}</span>
+                        <span>{{ form.tipo_video_laringoscopia }}</span>
                     </div>
+                    {% endif %}
                     {% if form.video_laringoscopia %}
                     <div class="info-item">
                         <label>Video de Laringoscopía:</label>
@@ -69,8 +88,8 @@
                 </div>
             </div>
 
-            <!-- Clasificaciones y Mediciones -->
-            <div class="detail-card" data-aos="fade-up" data-aos-delay="150">
+            <!-- Classifications and Measurements -->
+            <div class="detail-card" aos="fade-up" aos-delay="150">
                 <h3>Clasificaciones y Mediciones</h3>
                 <div class="info-grid">
                     <div class="info-item">
@@ -88,31 +107,37 @@
                 </div>
             </div>
 
-            <!-- Dispositivo Supraglótico -->
-            <div class="detail-card" data-aos="fade-up" data-aos-delay="200">
+            <!-- Supraglottic Device -->
+            <div class="detail-card" aos="fade-up" aos-delay="200">
                 <h3>Dispositivo Supraglótico</h3>
                 <div class="info-grid">
                     <div class="info-item">
                         <label>Uso de Supraglótico:</label>
-                        <span class="status-indicator {% if form.uso_supraglotico %}positive{% else %}negative{% endif %}">
+                        <span class="status-indicator {% if form.uso_supraglotico %}positive{% else %}neutral{% endif %}">
                             {{ form.uso_supraglotico|yesno:"Sí,No" }}
                         </span>
                     </div>
                     {% if form.uso_supraglotico %}
-                    <div class="info-item">
-                        <label>Tipo de Supraglótico:</label>
-                        <span>{{ form.tipo_supraglotico }}</span>
-                    </div>
-                    <div class="info-item full-width">
-                        <label>Problemas con Supraglóticos:</label>
-                        <p class="text-content">{{ form.problemas_supragloticos|linebreaks|default:"No reportados" }}</p>
-                    </div>
+                        {% if form.tipo_supraglotico %}
+                        <div class="info-item">
+                            <label>Tipo de Supraglótico:</label>
+                            <span>{{ form.tipo_supraglotico }}</span>
+                        </div>
+                        {% endif %}
+                        {% if form.problemas_supragloticos %}
+                        <div class="info-item full-width">
+                            <label>Problemas con Supraglóticos:</label>
+                            <div class="text-content">
+                                {{ form.problemas_supragloticos|linebreaks }}
+                            </div>
+                        </div>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Detalles de Intubación -->
-            <div class="detail-card" data-aos="fade-up" data-aos-delay="250">
+            <!-- Intubation Details -->
+            <div class="detail-card" aos="fade-up" aos-delay="250">
                 <h3>Detalles de Intubación</h3>
                 <div class="info-grid">
                     <div class="info-item">
@@ -121,17 +146,184 @@
                     </div>
                     <div class="info-item">
                         <label>Número de Intentos:</label>
-                        <span class="score {% if form.numero_intentos > 1 %}warning{% endif %}">
+                        <span class="score {% if form.numero_intentos > 1 %}warning{% else %}positive{% endif %}">
                             {{ form.numero_intentos }}
                         </span>
                     </div>
                     <div class="info-item">
-                        <label>Cormack:</label>
-                        <span class="score">{{ form.get_cormack_display }}</span>
+                        <label>Laringoscopía Directa:</label>
+                        <span>
+                            {{ form.laringoscopia_directa }}
+                        </span>
                     </div>
                     <div class="info-item">
-                        <label>POGO (%):</label>
-                        <span class="score">{{ form.pogo }}%</span>
+                        <label>Cormack:</label>
+                        <span class="score {% if form.cormack > 2 %}warning{% endif %}">
+                            {{ form.get_cormack_display }}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <label>POGO:</label>
+                        <span class="score {% if form.pogo < 50 %}warning{% endif %}">
+                            {{ form.pogo }}%
+                        </span>
+                    </div>
+                    {% if form.intubacion_tecnica_mixta %}
+                    <div class="info-item full-width">
+                        <label>Técnica Mixta:</label>
+                        <span>{{ form.intubacion_tecnica_mixta }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Awake Intubation -->
+            {% if form.intubacion_despierto %}
+            <div class="detail-card" aos="fade-up" aos-delay="300">
+                <h3>Intubación en Paciente Despierto</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Intubación Despierto:</label>
+                        <span class="status-indicator positive">Sí</span>
+                    </div>
+                    {% if form.descripcion_intubacion_despierto %}
+                    <div class="info-item full-width">
+                        <label>Descripción:</label>
+                        <div class="text-content">
+                            {{ form.descripcion_intubacion_despierto|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Anesthesia Details -->
+            <div class="detail-card" aos="fade-up" aos-delay="350">
+                <h3>Detalles de Anestesia</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Tipo de Anestesia:</label>
+                        <span>{{ form.tipo_anestesia }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Sedación:</label>
+                        <span>{{ form.sedacion }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Cooperación del Paciente:</label>
+                        <span>{{ form.cooperacion_paciente }}</span>
                     </div>
                 </div>
             </div>
+
+            <!-- Emergency Procedures -->
+            <div class="detail-card" aos="fade-up" aos-delay="400">
+                <h3>Procedimientos de Emergencia</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Algoritmo No Intubación:</label>
+                        <span class="status-indicator {% if form.algoritmo_no_intubacion %}warning{% else %}neutral{% endif %}">
+                            {{ form.algoritmo_no_intubacion|yesno:"Aplicado,No Requerido" }}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <label>Cricotiroidotomía:</label>
+                        <span class="status-indicator {% if form.crico_tiroidotomia %}warning{% else %}neutral{% endif %}">
+                            {{ form.crico_tiroidotomia|yesno:"Realizada,No Requerida" }}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <label>Traqueostomía Percutánea:</label>
+                        <span class="status-indicator {% if form.traqueostomia_percutanea %}warning{% else %}neutral{% endif %}">
+                            {{ form.traqueostomia_percutanea|yesno:"Realizada,No Requerida" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outcomes and Complications -->
+            <div class="detail-card" aos="fade-up" aos-delay="450">
+                <h3>Resultados y Complicaciones</h3>
+                <div class="info-grid">
+                    <div class="info-item full-width">
+                        <label>Resultado Final:</label>
+                        <div class="text-content">
+                            {{ form.resultado_final|linebreaks|default:"No especificado" }}
+                        </div>
+                    </div>
+                    {% if form.complicaciones %}
+                    <div class="info-item full-width">
+                        <label>Complicaciones:</label>
+                        <div class="text-content">
+                            {{ form.complicaciones|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Morbidity and Mortality -->
+            {% if form.morbilidad or form.mortalidad %}
+            <div class="detail-card warning-card" aos="fade-up" aos-delay="500">
+                <h3>Morbilidad y Mortalidad</h3>
+                <div class="info-grid">
+                    {% if form.morbilidad %}
+                    <div class="info-item full-width">
+                        <label>Morbilidad:</label>
+                        <div class="text-content">
+                            {{ form.descripcion_morbilidad|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if form.mortalidad %}
+                    <div class="info-item full-width">
+                        <label>Mortalidad:</label>
+                        <div class="text-content">
+                            {{ form.descripcion_mortalidad|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Additional Documentation -->
+            {% if form.fotos_videos %}
+            <div class="detail-card" aos="fade-up" aos-delay="550">
+                <h3>Documentación Adicional</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Fotos o Videos del Procedimiento:</label>
+                        <a href="{{ form.fotos_videos.url }}" class="file-link" target="_blank">
+                            Ver Archivos
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if form.observaciones %}
+            <div class="detail-card" aos="fade-up" aos-delay="600">
+                <h3>Observaciones Adicionales</h3>
+                <div class="info-grid">
+                    <div class="info-item full-width">
+                        <div class="text-content">
+                            {{ form.observaciones|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="detail-actions" aos="fade-up">
+            <a href="{% url 'postsurgery-update' form.folio_hospitalizacion.folio_hospitalizacion %}" 
+               class="btn btn-primary">Editar Formulario</a>
+            <a href="{% url 'patient-detail' patient.id_paciente %}" 
+               class="btn btn-secondary">Volver al Paciente</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

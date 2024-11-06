@@ -370,54 +370,100 @@ def presurgery_update(request, pk):
         'patient': patient
     })
 
+
 @login_required
 def postsurgery_create(request, patient_id):
     patient = get_object_or_404(Patient, id_paciente=patient_id, medico=request.user)
     presurgery = get_object_or_404(PreSurgeryForm, folio_hospitalizacion=f"PRE-{patient.folio_hospitalizacion}")
     
-    if request.method == 'POST':
-        form = PostSurgeryForm(request.POST, request.FILES)
-        if form.is_valid():
-            postsurgery = form.save(commit=False)
-            postsurgery.folio_hospitalizacion = presurgery
-            postsurgery.save()
-            messages.success(request, _('Formulario post-cirugía creado exitosamente.'))
-            return redirect('patient-detail', patient_id)
-    else:
-        form = PostSurgeryForm()
+    try:
+        # Check if a form already exists
+        existing_form = PostDuringSurgeryForm.objects.filter(
+            folio_hospitalizacion=presurgery
+        ).first()
+        
+        if existing_form:
+            messages.warning(request, 'Ya existe un formulario post-quirúrgico para este paciente.')
+            return redirect('postsurgery-detail', pk=existing_form.folio_hospitalizacion.folio_hospitalizacion)
+
+        if request.method == 'POST':
+            form = PostSurgeryCreateForm(request.POST, request.FILES)
+            if form.is_valid():
+                try:
+                    postsurgery = form.save(commit=False)
+                    postsurgery.folio_hospitalizacion = presurgery
+                    postsurgery.save()
+                    
+                    messages.success(request, 'Formulario post-quirúrgico creado exitosamente.')
+                    return redirect('patient-detail', patient_id)
+                except Exception as e:
+                    messages.error(request, f'Error al guardar el formulario: {str(e)}')
+            else:
+                error_messages = []
+                for field, errors in form.errors.items():
+                    error_messages.append(f"{field}: {', '.join(errors)}")
+                messages.error(request, f'Por favor corrija los siguientes errores: {"; ".join(error_messages)}')
+        else:
+            form = PostSurgeryCreateForm()
+
+        return render(request, 'postsurgery_form.html', {
+            'form': form,
+            'patient': patient
+        })
+
+    except Exception as e:
+        messages.error(request, f'Error inesperado: {str(e)}')
+        return redirect('patient-list')
+
+@login_required
+def postsurgery_detail(request, pk):
+    """
+    View for displaying post-surgery form details
+    """
+    postsurgery = get_object_or_404(PostDuringSurgeryForm, folio_hospitalizacion__folio_hospitalizacion=pk)
+    # Get the related patient through the pre-surgery form
+    patient = Patient.objects.get(folio_hospitalizacion=pk.replace('PRE-', ''))
     
-    return render(request, 'postsurgery_form.html', {
-        'form': form,
+    # Check permissions
+    if patient.medico != request.user and not request.user.is_staff:
+        messages.error(request, 'No tienes permiso para ver este formulario.')
+        return redirect('patient-list')
+    
+    return render(request, 'postsurgery_detail.html', {
+        'form': postsurgery,
         'patient': patient
     })
 
 @login_required
-def postsurgery_detail(request, pk):
-    postsurgery = get_object_or_404(PostDuringSurgeryForm, folio_hospitalizacion=pk)
-    return render(request, 'postsurgery_detail.html', {
-        'form': postsurgery
-    })
-
-@login_required
 def postsurgery_update(request, pk):
-    postsurgery = get_object_or_404(PostDuringSurgeryForm, folio_hospitalizacion=pk)
-    patient = get_object_or_404(Patient, folio_hospitalizacion=pk.replace('PRE-', ''))
+    """
+    Update view for post-surgery form
+    """
+    postsurgery = get_object_or_404(PostDuringSurgeryForm, folio_hospitalizacion__folio_hospitalizacion=pk)
+    patient = Patient.objects.get(folio_hospitalizacion=pk.replace('PRE-', ''))
     
+    # Check permissions
     if patient.medico != request.user and not request.user.is_staff:
         messages.error(request, _('No tienes permiso para editar este formulario.'))
-        return redirect('patient-detail', patient.id_paciente)
+        return redirect('patient-detail', pk=patient.id_paciente)
     
     if request.method == 'POST':
-        form = PostSurgeryForm(request.POST, request.FILES, instance=postsurgery)
+        form = PostSurgeryCreateForm(request.POST, request.FILES, instance=postsurgery)
         if form.is_valid():
-            form.save()
-            messages.success(request, _('Formulario post-cirugía actualizado exitosamente.'))
-            return redirect('postsurgery-detail', pk)
+            try:
+                form.save()
+                messages.success(request, _('Formulario post-quirúrgico actualizado exitosamente.'))
+                return redirect('postsurgery-detail', pk=pk)
+            except Exception as e:
+                messages.error(request, f'Error al actualizar el formulario: {str(e)}')
+        else:
+            messages.error(request, _('Por favor corrija los errores en el formulario.'))
     else:
-        form = PostSurgeryForm(instance=postsurgery)
+        form = PostSurgeryCreateForm(instance=postsurgery)
     
     return render(request, 'postsurgery_form.html', {
         'form': form,
+        'patient': patient,
         'postsurgery': postsurgery
     })
 

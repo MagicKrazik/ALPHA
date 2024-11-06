@@ -1,4 +1,4 @@
-/* Pre-Surgery Detail Styles */
+/* Post-Surgery Detail Styles */
 :root {
     --input-border: rgba(43, 69, 112, 0.1);
     --input-focus-border: var(--secondary-color);
@@ -13,7 +13,7 @@
     background-color: var(--background-color);
 }
 
-/* Header Styles */
+/* Header Section */
 .detail-header {
     text-align: center;
     margin-bottom: 2rem;
@@ -37,13 +37,6 @@
     color: var(--secondary-color);
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
-}
-
-.folio, .date {
-    font-size: 1rem;
-    color: var(--text-color);
-    opacity: 0.8;
-    margin: 0.25rem 0;
 }
 
 /* Content Grid */
@@ -75,7 +68,13 @@
     border-bottom: 2px solid var(--secondary-color);
 }
 
-/* Info Grid */
+/* Warning Card Variant */
+.warning-card {
+    border-left: 4px solid var(--warning-color);
+    background-color: rgba(255, 244, 229, 0.5);
+}
+
+/* Info Grid Layout */
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -88,16 +87,15 @@
     gap: 0.25rem;
 }
 
+.info-item.full-width {
+    grid-column: 1 / -1;
+}
+
 .info-item label {
     font-weight: 500;
     color: var(--text-color);
     font-size: 0.9rem;
     opacity: 0.8;
-}
-
-.info-item span {
-    font-size: 1rem;
-    color: var(--text-color);
 }
 
 /* Status Indicators */
@@ -115,35 +113,60 @@
     color: white;
 }
 
+.status-indicator.warning {
+    background-color: var(--warning-color);
+    color: white;
+}
+
 .status-indicator.negative {
     background-color: var(--error-color);
     color: white;
 }
 
-/* Info Blocks for Longer Text */
-.info-block {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+.status-indicator.neutral {
+    background-color: var(--text-muted);
+    color: white;
 }
 
-.info-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+/* Scores and Metrics */
+.score {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: white;
 }
 
-.info-section label {
-    font-weight: 500;
-    color: var(--text-color);
-    opacity: 0.8;
+.score.warning {
+    background-color: var(--warning-color);
 }
 
-.info-section p {
+/* Text Content */
+.text-content {
     color: var(--text-color);
     line-height: 1.6;
-    margin: 0;
     white-space: pre-line;
+    padding: 0.5rem;
+    background-color: rgba(43, 69, 112, 0.03);
+    border-radius: 4px;
+}
+
+/* File Links */
+.file-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    padding: 0.5rem;
+    border-radius: 4px;
+    background-color: rgba(43, 69, 112, 0.05);
+    transition: all 0.3s ease;
+}
+
+.file-link:hover {
+    background-color: rgba(43, 69, 112, 0.1);
+    transform: translateX(2px);
 }
 
 /* Action Buttons */
@@ -165,10 +188,6 @@
     text-decoration: none;
 }
 
-.btn i {
-    font-size: 1rem;
-}
-
 .btn-primary {
     background: var(--primary-color);
     color: white;
@@ -185,20 +204,22 @@
     box-shadow: 0 4px 12px rgba(43, 69, 112, 0.15);
 }
 
-/* Special Values Styling */
-.bmi-value {
-    font-weight: 500;
-}
-
-.asa-status {
-    font-weight: 500;
-    color: var(--primary-color);
+/* Emergency Procedures Section */
+.emergency-procedures {
+    border-left: 4px solid var(--error-color);
+    background-color: rgba(255, 235, 235, 0.5);
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .surgery-detail-section {
-        padding: 1rem 0;
+        padding: 1rem;
     }
 
     .detail-header {
@@ -206,7 +227,11 @@
     }
 
     .detail-title {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
+    }
+
+    .patient-meta h2 {
+        font-size: 1.25rem;
     }
 
     .detail-card {
@@ -217,6 +242,24 @@
         grid-template-columns: 1fr;
     }
 
+    .status-indicator {
+        width: fit-content;
+    }
+}
+
+@media (max-width: 480px) {
+    .detail-header {
+        padding: 1rem;
+    }
+
+    .detail-title {
+        font-size: 1.5rem;
+    }
+
+    .detail-card h3 {
+        font-size: 1.1rem;
+    }
+
     .detail-actions {
         flex-direction: column;
         padding: 0 1rem;
@@ -225,6 +268,10 @@
     .btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .info-item label {
+        font-size: 0.85rem;
     }
 }
 
@@ -243,5 +290,13 @@
 
     .detail-actions {
         display: none;
+    }
+
+    .status-indicator {
+        border: 1px solid #ccc;
+    }
+
+    .text-content {
+        border: 1px solid #eee;
     }
 }

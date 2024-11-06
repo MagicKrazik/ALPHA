@@ -24,16 +24,21 @@ urlpatterns = [
     
     # Post-surgery form URLs
     path('pacientes/<uuid:patient_id>/postsurgery/nuevo/', 
-         views.postsurgery_create, name='postsurgery-create'),
+         views.postsurgery_create, 
+         name='postsurgery-create'),
     path('pacientes/postsurgery/<str:pk>/', 
-         views.postsurgery_detail, name='postsurgery-detail'),
+         views.postsurgery_detail, 
+         name='postsurgery-detail'),
     path('pacientes/postsurgery/<str:pk>/editar/', 
-         views.postsurgery_update, name='postsurgery-update'),
+         views.postsurgery_update, 
+         name='postsurgery-update'),
 
     # dashboard urls:
     path('dashboard/', views.dashboard, name='dashboard'),
     path('api/dashboard/stats/', views.get_dashboard_stats, name='dashboard-stats'),
     path('api/dashboard/export/', views.export_dashboard, name='dashboard-export'),
+
+
 
 ]    
 

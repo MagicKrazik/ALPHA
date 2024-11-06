@@ -19,6 +19,16 @@
                 </div>
             </div>
 
+            <div class="help-text">
+                {{ field.help_text }}
+            </div>
+            
+            {% if field.field.required %}
+            <label class="required-field">
+                {{ field.label }}
+            </label>
+            {% endif %}
+
             {% if messages %}
                 {% for message in messages %}
                     <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">

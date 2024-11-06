@@ -1,4 +1,13 @@
 /* Pre-Surgery Detail Styles */
+:root {
+    --input-border: rgba(43, 69, 112, 0.1);
+    --input-focus-border: var(--secondary-color);
+    --input-focus-shadow: rgba(69, 183, 209, 0.1);
+    --warning-color: #f39c12;
+    --error-color: #e74c3c;
+    --success-color: #2ecc71;
+}
+
 .surgery-detail-section {
     padding: 2rem 0;
     background-color: var(--background-color);
