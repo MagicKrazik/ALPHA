@@ -8,6 +8,82 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
+import uuid
+from django.urls import reverse
+
+
+class Patient(models.Model):
+    """
+    Patient model for storing patient information
+    """
+    # Identification and linking fields
+    id_paciente = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        verbose_name=_("ID Paciente")
+    )
+    folio_hospitalizacion = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name=_("Folio Hospitalización")
+    )
+    
+    # Personal information
+    nombres = models.CharField(
+        max_length=100,
+        verbose_name=_("Nombres")
+    )
+    apellidos = models.CharField(
+        max_length=100,
+        verbose_name=_("Apellidos")
+    )
+    fecha_nacimiento = models.DateField(
+        verbose_name=_("Fecha de Nacimiento")
+    )
+    
+    # Medical relationship
+    medico = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        verbose_name=_("Médico Tratante")
+    )
+    
+    # Barcode field
+    codigo_barras = models.ImageField(
+        upload_to='codigos_barra/%Y/%m/',
+        verbose_name=_("Código de Barras")
+    )
+    
+    # Metadata
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Fecha de Registro")
+    )
+    ultima_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("Última Actualización")
+    )
+    activo = models.BooleanField(
+        default=True,
+        verbose_name=_("Activo")
+    )
+
+    class Meta:
+        verbose_name = _("Paciente")
+        verbose_name_plural = _("Pacientes")
+        ordering = ['-fecha_registro']
+        indexes = [
+            models.Index(fields=['folio_hospitalizacion']),
+            models.Index(fields=['medico', 'fecha_registro'])
+        ]
+
+    def __str__(self):
+        return f"{self.folio_hospitalizacion} - {self.nombres} {self.apellidos}"
+
+    def get_absolute_url(self):
+        return reverse('patient-detail', args=[str(self.id_paciente)])
+
 
 
 class ContactMessage(models.Model):
@@ -148,9 +224,9 @@ class PreSurgeryForm(models.Model):
     )
     
     # Physical Measurements
-    peso = models.IntegerField(verbose_name="Peso (kg)")
-    talla = models.IntegerField(verbose_name="Talla (cm)")
-    imc = models.IntegerField(verbose_name="IMC")
+    peso = models.FloatField(verbose_name="Peso (kg)")
+    talla = models.FloatField(verbose_name="Talla (cm)")
+    imc = models.FloatField(verbose_name="IMC")
     
     # Medical Assessment
     estado_fisico_asa = models.IntegerField(
@@ -224,7 +300,7 @@ class PreSurgeryForm(models.Model):
     
     # Vital Signs
     fc = models.IntegerField(verbose_name="FC")
-    ta = models.IntegerField(verbose_name="TA")
+    ta = models.TextField(verbose_name="TA")
     spo2_aire = models.IntegerField(verbose_name="SpO2 Aire Ambiente")
     spo2_oxigeno = models.IntegerField(verbose_name="SpO2 con Oxígeno")
     glasgow = models.IntegerField(verbose_name="Glasgow")

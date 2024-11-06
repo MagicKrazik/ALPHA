@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Formularios Post-Cirugía - ALPHA Project{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/postsurgery_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section surgery-list-section">
+    <div class="container">
+        <div class="section-header" data-aos="fade-up">
+            <h1 class="section-title">Formularios Post-Cirugía</h1>
+            <p class="section-description">Gestión de formularios post-quirúrgicos</p>
+        </div>
+
+        <div class="search-container" data-aos="fade-up" data-aos-delay="50">
+            <form method="GET" class="search-form">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" 
+                           placeholder="Buscar por folio o nombre..." 
+                           value="{{ search_query }}">
+                    <input type="hidden" name="form" value="post">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="surgery-forms-grid">
+            {% for patient in patients %}
+            <div class="surgery-card" data-aos="fade-up">
+                <div class="patient-info">
+                    <h3>{{ patient.nombres }} {{ patient.apellidos }}</h3>
+                    <p class="folio">Folio: {{ patient.folio_hospitalizacion }}</p>
+                    <div class="status-indicator">
+                        {% if patient.presurgeryform_set.exists %}
+                            {% if patient.postduringsurgeryform_set.exists %}
+                                <span class="status completed">Completado</span>
+                            {% else %}
+                                <span class="status pending">Pendiente</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="status warning">Sin Pre-Cirugía</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="form-actions">
+                    {% if patient.presurgeryform_set.exists %}
+                        {% if patient.postduringsurgeryform_set.exists %}
+                            <a href="{% url 'postsurgery-detail' patient.postduringsurgeryform.folio_hospitalizacion %}" 
+                               class="btn btn-info">
+                                <i class="fas fa-eye"></i> Ver Formulario
+                            </a>
+                            <a href="{% url 'postsurgery-update' patient.postduringsurgeryform.folio_hospitalizacion %}" 
+                               class="btn btn-primary">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                        {% else %}
+                            <a href="{% url 'postsurgery-create' patient.id_paciente %}" 
+                               class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Crear Formulario
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <button class="btn btn-disabled" disabled>
+                            <i class="fas fa-exclamation-triangle"></i> Requiere Pre-Cirugía
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="no-results">
+                <p>No se encontraron pacientes</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

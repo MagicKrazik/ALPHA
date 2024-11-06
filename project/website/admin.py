@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 from .models import MedicoUser
 from .models import ContactMessage
+from .models import Patient
 
 @admin.register(MedicoUser)
 class MedicoUserAdmin(UserAdmin):
@@ -39,3 +40,11 @@ class ContactMessageAdmin(admin.ModelAdmin):
     mark_as_read.short_description = "Mark selected messages as read"
     
     actions = ['mark_as_read']    
+
+
+@admin.register(Patient)
+class PatientAdmin(admin.ModelAdmin):
+    list_display = ('folio_hospitalizacion', 'nombres', 'apellidos', 'medico', 'fecha_registro')
+    list_filter = ('medico', 'fecha_registro', 'activo')
+    search_fields = ('folio_hospitalizacion', 'nombres', 'apellidos')
+    ordering = ('-fecha_registro',)    

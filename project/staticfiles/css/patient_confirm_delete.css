@@ -1,0 +1,139 @@
+/* Delete confirmation page styles */
+.delete-section {
+    min-height: calc(100vh - 160px);
+    padding: 4rem 0;
+    background-color: var(--background-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-container {
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.delete-content {
+    background-color: var(--section-bg-color);
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(43, 69, 112, 0.1);
+    text-align: center;
+    animation: slideInUp 0.4s ease-out forwards;
+}
+
+.delete-content h1 {
+    color: var(--error-color);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.delete-content p {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.delete-content .warning-text {
+    color: var(--error-color);
+    font-size: 0.95rem;
+    font-style: italic;
+    margin-bottom: 2rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.form-actions button,
+.form-actions a {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    min-width: 140px;
+}
+
+.form-actions button {
+    background-color: var(--error-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.form-actions button:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2);
+}
+
+.form-actions .btn-secondary {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.form-actions .btn-secondary:hover {
+    background-color: #e8edf5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(43, 69, 112, 0.1);
+}
+
+/* Animation keyframes */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .delete-section {
+        padding: 3rem 0;
+    }
+
+    .delete-content {
+        padding: 2rem 1.5rem;
+    }
+
+    .delete-content h1 {
+        font-size: 1.75rem;
+    }
+
+    .delete-content p {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .delete-container {
+        padding: 0 1rem;
+    }
+
+    .delete-content {
+        padding: 1.5rem 1rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions button,
+    .form-actions a {
+        width: 100%;
+        text-align: center;
+    }
+}

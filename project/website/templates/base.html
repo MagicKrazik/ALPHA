@@ -30,12 +30,14 @@
                             Pacientes<span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">Registar Px</a></li>
-                            <li><a href="#">Formulario PreX</a></li>
-                            <li><a href="#">Formulario PostX</a></li>
-                            <li><a href="#">Consultar Info Px</a></li>
+                            <li><a href="{% url 'patient-create' %}">Registrar Px</a></li>
+                            <li><a href="{% url 'patient-list' %}">Consultar Info Px</a></li>
+                            <li class="divider"></li>
+                            <li><a href="{% url 'patient-list' %}?form=pre">Formularios Pre-Cirugía</a></li>
+                            <li><a href="{% url 'patient-list' %}?form=post">Formularios Post-Cirugía</a></li>
                         </ul>
                     </div>
+                    <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
                     {% if user.is_staff or user.is_staff %}
                         <a href="#">Panel Admin</a>
                     {% endif %}

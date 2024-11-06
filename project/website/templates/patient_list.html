@@ -1,0 +1,85 @@
+{# templates/patients/patient_list.html - Remove the multiply filter #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestión de Pacientes - ALPHA Project{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/patient_list.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<section class="section patient-section">
+    <div class="container">
+        <div class="section-header aos-init aos-animate" data-aos="fade-up">
+            <h1 class="section-title">Gestión de Pacientes</h1>
+        </div>
+
+        <div class="search-container" data-aos="fade-up" data-aos-delay="50">
+            <form method="GET" class="search-form">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar pacientes..." 
+                           value="{{ search_query }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="add-patient-container" data-aos="fade-up" data-aos-delay="100">
+            <a href="{% url 'patient-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nuevo Paciente
+            </a>
+        </div>
+
+        <div class="patient-grid">
+            {% for patient in patients %}
+            <div class="patient-card" data-aos="fade-up" data-aos-delay="50">
+                <div class="patient-info">
+                    <h3>{{ patient.nombres }} {{ patient.apellidos }}</h3>
+                    <p class="folio">Folio: {{ patient.folio_hospitalizacion }}</p>
+                    <p class="fecha">Registro: {{ patient.fecha_registro|date:"d/m/Y" }}</p>
+                </div>
+                <div class="patient-actions">
+                    <a href="{% url 'patient-detail' patient.id_paciente %}" class="btn btn-info">
+                        <i class="fas fa-eye"></i> Ver
+                    </a>
+                    <a href="{% url 'patient-update' patient.id_paciente %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+                    <a href="{% url 'patient-delete' patient.id_paciente %}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="no-results">
+                <p>No se encontraron pacientes</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if patients.has_other_pages %}
+        <div class="pagination-container">
+            <ul class="pagination">
+                {% if patients.has_previous %}
+                <li><a href="?page={{ patients.previous_page_number }}&q={{ search_query }}">&laquo;</a></li>
+                {% endif %}
+                
+                {% for i in patients.paginator.page_range %}
+                <li {% if patients.number == i %}class="active"{% endif %}>
+                    <a href="?page={{ i }}&q={{ search_query }}">{{ i }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if patients.has_next %}
+                <li><a href="?page={{ patients.next_page_number }}&q={{ search_query }}">&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

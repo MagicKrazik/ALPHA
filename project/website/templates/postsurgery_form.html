@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/surgery_forms.css' %}">
+{% endblock %}
+
+{% block title %}Formulario Post-Cirugía - ALPHA Project{% endblock %}
+
+{% block content %}
+<section class="section surgery-form-section">
+    <div class="container">
+        <div class="surgery-form-container" data-aos="fade-up">
+            <div class="form-header">
+                <h1 class="form-title">
+                    {% if postsurgery %}
+                        Editar Formulario Post-Cirugía
+                    {% else %}
+                        Nuevo Formulario Post-Cirugía
+                    {% endif %}
+                </h1>
+                <div class="patient-info">
+                    <h2>{{ patient.nombres }} {{ patient.apellidos }}</h2>
+                    <p>Folio: {{ patient.folio_hospitalizacion }}</p>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data" class="surgery-form">
+                {% csrf_token %}
+                
+                <div class="form-sections">
+                    <!-- Procedure Information -->
+                    <div class="form-section">
+                        <h3>Información del Procedimiento</h3>
+                        <div class="form-grid">
+                            {{ form.lugar_problema }}
+                            {{ form.tecnica_utilizada }}
+                            {{ form.presencia_anestesiologo }}
+                            {{ form.carro_via_aerea }}
+                        </div>
+                    </div>
+
+                    <!-- Intubation Details -->
+                    <div class="form-section">
+                        <h3>Detalles de Intubación</h3>
+                        <div class="form-grid">
+                            {{ form.tipo_intubacion }}
+                            {{ form.numero_intentos }}
+                            {{ form.cormack }}
+                            {{ form.pogo }}
+                        </div>
+                    </div>
+
+                    <!-- Complications and Outcomes -->
+                    <div class="form-section">
+                        <h3>Complicaciones y Resultados</h3>
+                        <div class="form-grid">
+                            {{ form.complicaciones }}
+                            {{ form.resultado_final }}
+                            {{ form.morbilidad }}
+                            {{ form.mortalidad }}
+                        </div>
+                    </div>
+
+                    <!-- Medical Personnel -->
+                    <div class="form-section">
+                        <h3>Personal Médico</h3>
+                        <div class="form-grid">
+                            {{ form.nombre_anestesiologo }}
+                            {{ form.cedula_profesional }}
+                            {{ form.especialidad }}
+                            {{ form.nombre_residente }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {% if postsurgery %}
+                            Actualizar Formulario
+                        {% else %}
+                            Guardar Formulario
+                        {% endif %}
+                    </button>
+                    <a href="{% url 'patient-detail' patient.id_paciente %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

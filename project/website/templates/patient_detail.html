@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalle de pacientes - ALPHA Project{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/patient_detail.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<section class="section detail-section">
+    <div class="container">
+        <div class="detail-container aos-init aos-animate" data-aos="fade-up">
+            <div class="detail-header">
+                <h1>{{ patient.nombres }} {{ patient.apellidos }}</h1>
+                <div class="detail-meta">
+                    <span class="folio">Folio: {{ patient.folio_hospitalizacion }}</span>
+                    <span class="fecha">Registro: {{ patient.fecha_registro|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+
+            <div class="detail-content">
+                <div class="info-card aos-init aos-animate" data-aos="fade-up">
+                    <h3>Información Personal</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Nombres:</label>
+                            <span>{{ patient.nombres }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Apellidos:</label>
+                            <span>{{ patient.apellidos }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Fecha de Nacimiento:</label>
+                            <span>{{ patient.fecha_nacimiento|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Médico Tratante:</label>
+                            <span>{{ patient.medico.get_full_name }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="forms-section">
+                    <div class="forms-card aos-init aos-animate" data-aos="fade-up">
+                        <h3>Formularios Pre-Cirugía</h3>
+                        {% if presurgery_forms %}
+                            <div class="forms-grid">
+                                {% for form in presurgery_forms %}
+                                <div class="form-item">
+                                    <span class="date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
+                                    <a href="{% url 'presurgery-detail' form.pk %}" class="btn btn-info">Ver Formulario</a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="no-forms">No hay formularios pre-cirugía registrados</p>
+                        {% endif %}
+                        <a href="{% url 'presurgery-create' patient.id_paciente %}" class="btn btn-primary">
+                            Nuevo Formulario Pre-Cirugía
+                        </a>
+                    </div>
+
+                    <div class="forms-card aos-init aos-animate" data-aos="fade-up">
+                        <h3>Formularios Post-Cirugía</h3>
+                        {% if postsurgery_forms %}
+                            <div class="forms-grid">
+                                {% for form in postsurgery_forms %}
+                                <div class="form-item">
+                                    <span class="date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
+                                    <a href="{% url 'postsurgery-detail' form.pk %}" class="btn btn-info">Ver Formulario</a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="no-forms">No hay formularios post-cirugía registrados</p>
+                        {% endif %}
+                        <a href="{% url 'postsurgery-create' patient.id_paciente %}" class="btn btn-primary">
+                            Nuevo Formulario Post-Cirugía
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-actions">
+                <a href="{% url 'patient-update' patient.id_paciente %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Editar Información
+                </a>
+                <a href="{% url 'patient-delete' patient.id_paciente %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar Paciente
+                </a>
+                <a href="{% url 'patient-list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a la Lista
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/patient_form.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,116 @@
+/* static/css/postsurgery_list.css */
+/* Base styles inherit from presurgery_list.css */
+/* Add specific styles for post-surgery list */
+
+.status-indicator {
+    margin: 1rem 0;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.status.completed {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+}
+
+.status.completed::before {
+    background-color: var(--success-color);
+}
+
+.status.pending {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--warning-color);
+}
+
+.status.pending::before {
+    background-color: var(--warning-color);
+}
+
+.status.warning {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+}
+
+.status.warning::before {
+    background-color: var(--danger-color);
+}
+
+/* Timeline indicator */
+.timeline-indicator {
+    display: flex;
+    align-items: center;
+    margin: 1rem 0;
+    padding: 0.5rem;
+    background: var(--background-color);
+    border-radius: 8px;
+}
+
+.timeline-step {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.timeline-step.completed {
+    color: var(--success-color);
+}
+
+.timeline-step:not(:last-child)::after {
+    content: '';
+    width: 20px;
+    height: 2px;
+    background: #ddd;
+    margin: 0 0.5rem;
+}
+
+.timeline-step.completed::after {
+    background: var(--success-color);
+}
+
+/* Additional mobile styles */
+@media (max-width: 768px) {
+    .timeline-indicator {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .timeline-step:not(:last-child)::after {
+        width: 2px;
+        height: 20px;
+        margin: 0.5rem 0;
+    }
+}
+
+/* Animation for status changes */
+@keyframes statusPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.status {
+    animation: statusPulse 2s infinite;
+}

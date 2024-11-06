@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalle de pacientes - ALPHA Project{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/patient_confirm_delete.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<section class="section delete-section">
+    <div class="container">
+        <div class="delete-container aos-init aos-animate" data-aos="fade-up">
+            <div class="delete-content">
+                <h1>Confirmar Eliminación</h1>
+                <p>¿Está seguro que desea eliminar al paciente "{{ patient.nombres }} {{ patient.apellidos }}"?</p>
+                <p class="warning">Esta acción no se puede deshacer.</p>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-danger">Confirmar Eliminación</button>
+                        <a href="{% url 'patient-detail' patient.id_paciente %}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/patient_confirm_delete.js' %}"></script>
+{% endblock %}

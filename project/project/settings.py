@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from django.utils.crypto import get_random_string
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'website',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -145,6 +147,26 @@ EMAIL_HOST = 'smtp.gmail.com'  # Or your email provider's SMTP server
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'carlos.horacio.olivares@gmail.com'  # Your email address
-EMAIL_HOST_PASSWORD = 'jdflsajdflksajfkslajdf'  # Your email password or app-specific password
+EMAIL_HOST_PASSWORD = 'yscm vwgx mste oojg'  # Your email password or app-specific password
 DEFAULT_FROM_EMAIL = 'carlos.horacio.olivares@gmail.com'
 CONTACT_EMAIL = 'carlos.horacio.olivares@gmail.com'  # Email where contact form submissions will be sent
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}

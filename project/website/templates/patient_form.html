@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registro y actualizacion de pacientes - ALPHA Project{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/patient_form.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %}
+
+
+{% block content %}
+<section class="section form-section">
+    <div class="container">
+        <div class="form-container" data-aos="fade-up">
+            <h1 class="form-title">
+                {% if patient %}
+                    Actualizar Información del Paciente
+                {% else %}
+                    Registrar Nuevo Paciente
+                {% endif %}
+            </h1>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data" class="patient-form">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                <div class="form-group">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.errors %}
+                    <span class="error-message">{{ field.errors|join:", " }}</span>
+                    {% endif %}
+                    {% if field.help_text %}
+                    <small class="help-text">{{ field.help_text }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {% if patient %}
+                            Actualizar Paciente
+                        {% else %}
+                            Registrar Paciente
+                        {% endif %}
+                    </button>
+                    <a href="{% url 'patient-list' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<script src="{% static 'js/patient_form.js' %}"></script>
+{% endblock %}

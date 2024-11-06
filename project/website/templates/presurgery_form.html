@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/presurgery_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="section surgery-form-section">
+    <div class="container">
+        <div class="surgery-form-container" data-aos="fade-up">
+            <div class="form-header">
+                <h1 class="form-title">
+                    {% if presurgery %}Editar{% else %}Nuevo{% endif %} Formulario Pre-Cirugía
+                </h1>
+                <div class="patient-info">
+                    <h2>{{ patient.nombres }} {{ patient.apellidos }}</h2>
+                    <p>Folio: {{ patient.folio_hospitalizacion }}</p>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="surgery-form" id="presurgeryForm">
+                {% csrf_token %}
+                
+                <div class="form-sections">
+                    <!-- Información Básica -->
+                    <div class="form-section">
+                        <h3>Información del Paciente</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.nombres.label_tag }}
+                                {{ form.nombres }}
+                                {% if form.nombres.errors %}
+                                    <div class="invalid-feedback">{{ form.nombres.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.apellidos.label_tag }}
+                                {{ form.apellidos }}
+                                {% if form.apellidos.errors %}
+                                    <div class="invalid-feedback">{{ form.apellidos.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.fecha_nacimiento.label_tag }}
+                                {{ form.fecha_nacimiento }}
+                                {% if form.fecha_nacimiento.errors %}
+                                    <div class="invalid-feedback">{{ form.fecha_nacimiento.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.medico.label_tag }}
+                                {{ form.medico }}
+                                {% if form.medico.errors %}
+                                    <div class="invalid-feedback">{{ form.medico.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.medico_tratante.label_tag }}
+                                {{ form.medico_tratante }}
+                                {% if form.medico_tratante.errors %}
+                                    <div class="invalid-feedback">{{ form.medico_tratante.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.fecha_reporte.label_tag }}
+                                {{ form.fecha_reporte }}
+                                {% if form.fecha_reporte.errors %}
+                                    <div class="invalid-feedback">{{ form.fecha_reporte.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Diagnóstico y Evaluación -->
+                    <div class="form-section">
+                        <h3>Diagnóstico y Evaluación</h3>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                {{ form.diagnostico_preoperatorio.label_tag }}
+                                {{ form.diagnostico_preoperatorio }}
+                                {% if form.diagnostico_preoperatorio.errors %}
+                                    <div class="invalid-feedback">{{ form.diagnostico_preoperatorio.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.evaluacion_preoperatoria.label_tag }}
+                                {{ form.evaluacion_preoperatoria }}
+                                {% if form.evaluacion_preoperatoria.errors %}
+                                    <div class="invalid-feedback">{{ form.evaluacion_preoperatoria.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medidas Físicas -->
+                    <div class="form-section">
+                        <h3>Medidas Físicas</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.peso.label_tag }}
+                                {{ form.peso }}
+                                {% if form.peso.errors %}
+                                    <div class="invalid-feedback">{{ form.peso.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.talla.label_tag }}
+                                {{ form.talla }}
+                                {% if form.talla.errors %}
+                                    <div class="invalid-feedback">{{ form.talla.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.imc.label_tag }}
+                                {{ form.imc }}
+                                {% if form.imc.errors %}
+                                    <div class="invalid-feedback">{{ form.imc.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.estado_fisico_asa.label_tag }}
+                                {{ form.estado_fisico_asa }}
+                                {% if form.estado_fisico_asa.errors %}
+                                    <div class="invalid-feedback">{{ form.estado_fisico_asa.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Signos Vitales -->
+                    <div class="form-section">
+                        <h3>Signos Vitales</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.fc.label_tag }}
+                                {{ form.fc }}
+                                {% if form.fc.errors %}
+                                    <div class="invalid-feedback">{{ form.fc.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.ta.label_tag }}
+                                {{ form.ta }}
+                                {% if form.ta.errors %}
+                                    <div class="invalid-feedback">{{ form.ta.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.spo2_aire.label_tag }}
+                                {{ form.spo2_aire }}
+                                {% if form.spo2_aire.errors %}
+                                    <div class="invalid-feedback">{{ form.spo2_aire.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.spo2_oxigeno.label_tag }}
+                                {{ form.spo2_oxigeno }}
+                                {% if form.spo2_oxigeno.errors %}
+                                    <div class="invalid-feedback">{{ form.spo2_oxigeno.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.glasgow.label_tag }}
+                                {{ form.glasgow }}
+                                {% if form.glasgow.errors %}
+                                    <div class="invalid-feedback">{{ form.glasgow.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historia Médica -->
+                    <div class="form-section">
+                        <h3>Historia Médica y Antecedentes</h3>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                {{ form.comorbilidades.label_tag }}
+                                {{ form.comorbilidades }}
+                                {% if form.comorbilidades.errors %}
+                                    <div class="invalid-feedback">{{ form.comorbilidades.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.medicamentos.label_tag }}
+                                {{ form.medicamentos }}
+                                {% if form.medicamentos.errors %}
+                                    <div class="invalid-feedback">{{ form.medicamentos.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.alergias.label_tag }}
+                                {{ form.alergias }}
+                                {% if form.alergias.errors %}
+                                    <div class="invalid-feedback">{{ form.alergias.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.ayuno_hrs.label_tag }}
+                                {{ form.ayuno_hrs }}
+                                {% if form.ayuno_hrs.errors %}
+                                    <div class="invalid-feedback">{{ form.ayuno_hrs.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Factores de Riesgo -->
+                    <div class="form-section">
+                        <h3>Factores de Riesgo</h3>
+                        <div class="form-grid">
+                            <div class="form-group checkbox-group">
+                                {{ form.tabaquismo.label_tag }}
+                                {{ form.tabaquismo }}
+                                {% if form.tabaquismo.errors %}
+                                    <div class="invalid-feedback">{{ form.tabaquismo.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.uso_glp1.label_tag }}
+                                {{ form.uso_glp1 }}
+                                {% if form.uso_glp1.errors %}
+                                    <div class="invalid-feedback">{{ form.uso_glp1.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.dosis_glp1.label_tag }}
+                                {{ form.dosis_glp1 }}
+                                {% if form.dosis_glp1.errors %}
+                                    <div class="invalid-feedback">{{ form.dosis_glp1.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vía Aérea -->
+                    <div class="form-section">
+                        <h3>Evaluación de Vía Aérea</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.mallampati.label_tag }}
+                                {{ form.mallampati }}
+                                {% if form.mallampati.errors %}
+                                    <div class="invalid-feedback">{{ form.mallampati.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.patil_aldrete.label_tag }}
+                                {{ form.patil_aldrete }}
+                                {% if form.patil_aldrete.errors %}
+                                    <div class="invalid-feedback">{{ form.patil_aldrete.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.distancia_inter_incisiva.label_tag }}
+                                {{ form.distancia_inter_incisiva }}
+                                {% if form.distancia_inter_incisiva.errors %}
+                                    <div class="invalid-feedback">{{ form.distancia_inter_incisiva.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.distancia_tiro_mentoniana.label_tag }}
+                                {{ form.distancia_tiro_mentoniana }}
+                                {% if form.distancia_tiro_mentoniana.errors %}
+                                    <div class="invalid-feedback">{{ form.distancia_tiro_mentoniana.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.protrusion_mandibular.label_tag }}
+                                {{ form.protrusion_mandibular }}
+                                {% if form.protrusion_mandibular.errors %}
+                                    <div class="invalid-feedback">{{ form.protrusion_mandibular.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.macocha.label_tag }}
+                                {{ form.macocha }}
+                                {% if form.macocha.errors %}
+                                    <div class="invalid-feedback">{{ form.macocha.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.stop_bang.label_tag }}
+                                {{ form.stop_bang }}
+                                {% if form.stop_bang.errors %}
+                                    <div class="invalid-feedback">{{ form.stop_bang.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.desviacion_traquea.label_tag }}
+                                {{ form.desviacion_traquea }}
+                                {% if form.desviacion_traquea.errors %}
+                                    <div class="invalid-feedback">{{ form.desviacion_traquea.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dificultades y Complicaciones -->
+                    <div class="form-section">
+                        <h3>Dificultades y Complicaciones</h3>
+                        <div class="form-grid">
+                            <div class="form-group checkbox-group">
+                                {{ form.antecedentes_dificultad.label_tag }}
+                                {{ form.antecedentes_dificultad }}
+                                {% if form.antecedentes_dificultad.errors %}
+                                    <div class="invalid-feedback">{{ form.antecedentes_dificultad.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.descripcion_dificultad.label_tag }}
+                                {{ form.descripcion_dificultad }}
+                                {% if form.descripcion_dificultad.errors %}
+                                    <div class="invalid-feedback">{{ form.descripcion_dificultad.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.problemas_deglucion.label_tag }}
+                                {{ form.problemas_deglucion }}
+                                {% if form.problemas_deglucion.errors %}
+                                    <div class="invalid-feedback">{{ form.problemas_deglucion.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.estridor_laringeo.label_tag }}
+                                {{ form.estridor_laringeo }}
+                                {% if form.estridor_laringeo.errors %}
+                                    <div class="invalid-feedback">{{ form.estridor_laringeo.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- USG Gástrico -->
+                    <div class="form-section">
+                        <h3>Evaluación USG Gástrico</h3>
+                        <div class="form-grid">
+                            <div class="form-group checkbox-group">
+                                {{ form.uso_usg_gastrico.label_tag }}
+                                {{ form.uso_usg_gastrico }}
+                                {% if form.uso_usg_gastrico.errors %}
+                                    <div class="invalid-feedback">{{ form.uso_usg_gastrico.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.usg_gastrico_ml.label_tag }}
+                                {{ form.usg_gastrico_ml }}
+                                {% if form.usg_gastrico_ml.errors %}
+                                    <div class="invalid-feedback">{{ form.usg_gastrico_ml.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.imagen_usg_gastrico.label_tag }}
+                                {{ form.imagen_usg_gastrico }}
+                                {% if form.imagen_usg_gastrico.errors %}
+                                    <div class="invalid-feedback">{{ form.imagen_usg_gastrico.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estudios Adicionales -->
+                    <div class="form-section">
+                        <h3>Estudios Adicionales</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.estudios_radiologicos_va.label_tag }}
+                                {{ form.estudios_radiologicos_va }}
+                                {% if form.estudios_radiologicos_va.errors %}
+                                    <div class="invalid-feedback">{{ form.estudios_radiologicos_va.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.observaciones.label_tag }}
+                                {{ form.observaciones }}
+                                {% if form.observaciones.errors %}
+                                    <div class="invalid-feedback">{{ form.observaciones.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {% if presurgery %}Actualizar{% else %}Guardar{% endif %} Formulario
+                    </button>
+                    <a href="{% url 'patient-detail' patient.id_paciente %}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/presurgery_form.js' %}"></script>
+{% endblock %}

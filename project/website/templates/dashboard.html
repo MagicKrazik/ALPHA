@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Médico - ALPHA Project{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="container">
+        <div class="dashboard-filters">
+            <div class="filter-group">
+                <select id="dateFilter" class="filter-select">
+                    <option value="7">Última Semana</option>
+                    <option value="30" selected>Último Mes</option>
+                    <option value="90">Último Trimestre</option>
+                    <option value="365">Último Año</option>
+                </select>
+                <select id="categoryFilter" class="filter-select">
+                    <option value="all">Todas las Categorías</option>
+                    <option value="surgeries">Cirugías</option>
+                    <option value="complications">Complicaciones</option>
+                    <option value="airway">Vía Aérea</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button id="refreshDashboard" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+                <button id="exportDashboard" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+            </div>
+        </div>
+        <!-- Quick Stats Cards -->
+        <div class="quick-stats">
+            <div class="stat-card" data-aos="fade-up">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Total Pacientes</h3>
+                    <p class="stat-number">{{ total_patients }}</p>
+                </div>
+            </div>
+            
+            <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
+                <div class="stat-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Pacientes Este Mes</h3>
+                    <p class="stat-number">{{ patients_this_month }}</p>
+                </div>
+            </div>
+            
+            <div class="stat-card warning" data-aos="fade-up" data-aos-delay="200">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Vía Aérea Difícil</h3>
+                    <p class="stat-number">{{ high_risk_airways }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- ASA Distribution -->
+            <div class="chart-card" data-aos="fade-up">
+                <h3>Distribución ASA</h3>
+                <canvas id="asaChart"></canvas>
+            </div>
+
+            <!-- Monthly Trend -->
+            <div class="chart-card" data-aos="fade-up">
+                <h3>Tendencia Mensual de Cirugías</h3>
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+
+            <!-- BMI Distribution -->
+            <div class="chart-card" data-aos="fade-up">
+                <h3>Distribución IMC</h3>
+                <canvas id="bmiChart"></canvas>
+            </div>
+
+            <!-- Age Distribution -->
+            <div class="chart-card" data-aos="fade-up">
+                <h3>Distribución por Edad</h3>
+                <canvas id="ageChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Complications Section -->
+        <div class="outcomes-section">
+            <h2>Complicaciones y Resultados</h2>
+            <div class="outcomes-grid">
+                <div class="outcome-card">
+                    <h4>Tasa de Complicaciones</h4>
+                    <div class="circular-progress">
+                        <span class="progress-value">{{ complications_data.complications_percentage }}%</span>
+                    </div>
+                </div>
+                <div class="outcome-card">
+                    <h4>Éxito Primera Intubación</h4>
+                    <div class="circular-progress">
+                        <span class="progress-value">{{ intubation_data.success_rate }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Make data available to dashboard.js
+    const asaData = {{ asa_distribution|safe }};
+    const monthlyData = {{ monthly_surgeries|safe }};
+    const bmiDistribution = {{ bmi_distribution|safe }};
+    const ageDistribution = {{ age_distribution|safe }};
+    const mallampatiData = {{ mallampati_data|safe }};
+</script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}
