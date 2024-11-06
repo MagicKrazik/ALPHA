@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalle Pre-Cirugía - {{ form.nombres }} {{ form.apellidos }}{% endblock %}
+
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/presurgery_detail.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="section surgery-detail-section">
+    <div class="container">
+        <!-- Header -->
+        <div class="detail-header" data-aos="fade-up">
+            <h1 class="detail-title">Evaluación Pre-Quirúrgica</h1>
+            <div class="patient-meta">
+                <h2>{{ form.nombres }} {{ form.apellidos }}</h2>
+                <p class="folio">Folio: {{ form.folio_hospitalizacion }}</p>
+                <p class="date">Fecha de Reporte: {{ form.fecha_reporte|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="detail-grid">
+            <!-- Patient Information -->
+            <div class="detail-card" data-aos="fade-up">
+                <h3>Información del Paciente</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Nombres:</label>
+                        <span>{{ form.nombres }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Apellidos:</label>
+                        <span>{{ form.apellidos }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Fecha de Nacimiento:</label>
+                        <span>{{ form.fecha_nacimiento|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Médico Tratante:</label>
+                        <span>{{ form.medico_tratante }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Physical Assessment -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="100">
+                <h3>Evaluación Física</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Peso:</label>
+                        <span>{{ form.peso }} kg</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Talla:</label>
+                        <span>{{ form.talla }} cm</span>
+                    </div>
+                    <div class="info-item">
+                        <label>IMC:</label>
+                        <span class="bmi-value">{{ form.imc }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>ASA:</label>
+                        <span class="asa-status">{{ form.get_estado_fisico_asa_display }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vital Signs -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="150">
+                <h3>Signos Vitales</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Frecuencia Cardíaca:</label>
+                        <span>{{ form.fc }} lpm</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Tensión Arterial:</label>
+                        <span>{{ form.ta }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>SpO2 (Aire):</label>
+                        <span>{{ form.spo2_aire }}%</span>
+                    </div>
+                    <div class="info-item">
+                        <label>SpO2 (O2):</label>
+                        <span>{{ form.spo2_oxigeno }}%</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Glasgow:</label>
+                        <span>{{ form.glasgow }}/15</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Airway Assessment -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="200">
+                <h3>Evaluación de Vía Aérea</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Mallampati:</label>
+                        <span>Clase {{ form.mallampati }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Patil-Aldrete:</label>
+                        <span>{{ form.patil_aldrete }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Distancia Inter-incisiva:</label>
+                        <span>{{ form.distancia_inter_incisiva }} cm</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Distancia Tiro-mentoniana:</label>
+                        <span>{{ form.distancia_tiro_mentoniana }} cm</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Protrusión Mandibular:</label>
+                        <span>{{ form.protrusion_mandibular }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>MACOCHA:</label>
+                        <span>{{ form.macocha }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>STOP-BANG:</label>
+                        <span>{{ form.stop_bang }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Factors -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="250">
+                <h3>Factores de Riesgo</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Ayuno:</label>
+                        <span>{{ form.ayuno_hrs }} horas</span>
+                    </div>
+                    <div class="info-item status">
+                        <label>Tabaquismo:</label>
+                        <span class="status-indicator {% if form.tabaquismo %}positive{% else %}negative{% endif %}">
+                            {{ form.tabaquismo|yesno:"Sí,No" }}
+                        </span>
+                    </div>
+                    <div class="info-item status">
+                        <label>Uso de GLP1:</label>
+                        <span class="status-indicator {% if form.uso_glp1 %}positive{% else %}negative{% endif %}">
+                            {{ form.uso_glp1|yesno:"Sí,No" }}
+                        </span>
+                    </div>
+                    {% if form.uso_glp1 %}
+                    <div class="info-item">
+                        <label>Dosis GLP1:</label>
+                        <span>{{ form.dosis_glp1 }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Medical History -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="300">
+                <h3>Historia Médica</h3>
+                <div class="info-block">
+                    <div class="info-section">
+                        <label>Comorbilidades:</label>
+                        <p>{{ form.comorbilidades|linebreaks|default:"Ninguna reportada" }}</p>
+                    </div>
+                    <div class="info-section">
+                        <label>Medicamentos:</label>
+                        <p>{{ form.medicamentos|linebreaks|default:"Ninguno reportado" }}</p>
+                    </div>
+                    <div class="info-section">
+                        <label>Alergias:</label>
+                        <p>{{ form.alergias|linebreaks|default:"Ninguna reportada" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="350">
+                <h3>Información Adicional</h3>
+                <div class="info-block">
+                    <div class="info-section">
+                        <label>Diagnóstico Preoperatorio:</label>
+                        <p>{{ form.diagnostico_preoperatorio|linebreaks }}</p>
+                    </div>
+                    <div class="info-section">
+                        <label>Evaluación Preoperatoria:</label>
+                        <p>{{ form.evaluacion_preoperatoria|linebreaks }}</p>
+                    </div>
+                    {% if form.observaciones %}
+                    <div class="info-section">
+                        <label>Observaciones:</label>
+                        <p>{{ form.observaciones|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="detail-actions" data-aos="fade-up">
+            <a href="{% url 'presurgery-update' form.folio_hospitalizacion %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Editar Formulario
+            </a>
+            <a href="{% url 'patient-detail' patient.id_paciente %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver al Paciente
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<script src="{% static 'js/presurgery_detail.js' %}"></script>
+{% endblock %}

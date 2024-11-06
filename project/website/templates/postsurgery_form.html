@@ -1,16 +1,20 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/surgery_forms.css' %}">
-{% endblock %}
 
 {% block title %}Formulario Post-Cirugía - ALPHA Project{% endblock %}
 
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/postsurgery_form.css' %}">
+{% endblock %}
+
+
 {% block content %}
-<section class="section surgery-form-section">
+<div class="section surgery-form-section">
     <div class="container">
-        <div class="surgery-form-container" data-aos="fade-up">
+        <div class="surgery-form-container aos-init aos-animate" data-aos="fade-up">
+            <!-- Form Header -->
             <div class="form-header">
                 <h1 class="form-title">
                     {% if postsurgery %}
@@ -33,67 +37,462 @@
                 {% endfor %}
             {% endif %}
 
-            <form method="POST" enctype="multipart/form-data" class="surgery-form">
+            <form method="post" enctype="multipart/form-data" id="postsurgeryForm">
                 {% csrf_token %}
                 
                 <div class="form-sections">
-                    <!-- Procedure Information -->
+                    <!-- Location and Personnel Section -->
                     <div class="form-section">
-                        <h3>Información del Procedimiento</h3>
+                        <h3>Localización y Personal</h3>
                         <div class="form-grid">
-                            {{ form.lugar_problema }}
-                            {{ form.tecnica_utilizada }}
-                            {{ form.presencia_anestesiologo }}
-                            {{ form.carro_via_aerea }}
+                            <div class="form-group">
+                                {{ form.lugar_problema.label_tag }}
+                                {{ form.lugar_problema }}
+                                {% if form.lugar_problema.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.lugar_problema.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.presencia_anestesiologo.label_tag }}
+                                {{ form.presencia_anestesiologo }}
+                                {% if form.presencia_anestesiologo.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.presencia_anestesiologo.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Intubation Details -->
+                    <!-- Equipment and Techniques Section -->
+                    <div class="form-section">
+                        <h3>Equipamiento y Técnicas</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.tecnica_utilizada.label_tag }}
+                                {{ form.tecnica_utilizada }}
+                                {% if form.tecnica_utilizada.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.tecnica_utilizada.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.carro_via_aerea.label_tag }}
+                                {{ form.carro_via_aerea }}
+                                {% if form.carro_via_aerea.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.carro_via_aerea.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.tipo_video_laringoscopia.label_tag }}
+                                {{ form.tipo_video_laringoscopia }}
+                                {% if form.tipo_video_laringoscopia.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.tipo_video_laringoscopia.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.video_laringoscopia.label_tag }}
+                                {{ form.video_laringoscopia }}
+                                {% if form.video_laringoscopia.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.video_laringoscopia.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Classifications and Measurements Section -->
+                    <div class="form-section">
+                        <h3>Clasificaciones y Mediciones</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.clasificacion_han.label_tag }}
+                                {{ form.clasificacion_han }}
+                                {% if form.clasificacion_han.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.clasificacion_han.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.aditamento_via_aerea.label_tag }}
+                                {{ form.aditamento_via_aerea }}
+                                {% if form.aditamento_via_aerea.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.aditamento_via_aerea.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.tiempo_preoxigenacion.label_tag }}
+                                {{ form.tiempo_preoxigenacion }}
+                                {% if form.tiempo_preoxigenacion.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.tiempo_preoxigenacion.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Supraglottic Device Section -->
+                    <div class="form-section">
+                        <h3>Dispositivo Supraglótico</h3>
+                        <div class="form-grid">
+                            <div class="form-group checkbox-group">
+                                {{ form.uso_supraglotico.label_tag }}
+                                {{ form.uso_supraglotico }}
+                                {% if form.uso_supraglotico.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.uso_supraglotico.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.tipo_supraglotico.label_tag }}
+                                {{ form.tipo_supraglotico }}
+                                {% if form.tipo_supraglotico.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.tipo_supraglotico.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.problemas_supragloticos.label_tag }}
+                                {{ form.problemas_supragloticos }}
+                                {% if form.problemas_supragloticos.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.problemas_supragloticos.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Intubation Details Section -->
                     <div class="form-section">
                         <h3>Detalles de Intubación</h3>
                         <div class="form-grid">
-                            {{ form.tipo_intubacion }}
-                            {{ form.numero_intentos }}
-                            {{ form.cormack }}
-                            {{ form.pogo }}
+                            <div class="form-group">
+                                {{ form.tipo_intubacion.label_tag }}
+                                {{ form.tipo_intubacion }}
+                                {% if form.tipo_intubacion.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.tipo_intubacion.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.numero_intentos.label_tag }}
+                                {{ form.numero_intentos }}
+                                {% if form.numero_intentos.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.numero_intentos.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.cormack.label_tag }}
+                                {{ form.cormack }}
+                                {% if form.cormack.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.cormack.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.pogo.label_tag }}
+                                {{ form.pogo }}
+                                {% if form.pogo.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.pogo.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Complications and Outcomes -->
+                    <!-- Additional Procedures Section -->
                     <div class="form-section">
-                        <h3>Complicaciones y Resultados</h3>
+                        <h3>Procedimientos Adicionales</h3>
                         <div class="form-grid">
-                            {{ form.complicaciones }}
-                            {{ form.resultado_final }}
-                            {{ form.morbilidad }}
-                            {{ form.mortalidad }}
+                            <div class="form-group">
+                                {{ form.intubacion_tecnica_mixta.label_tag }}
+                                {{ form.intubacion_tecnica_mixta }}
+                                {% if form.intubacion_tecnica_mixta.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.intubacion_tecnica_mixta.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.intubacion_despierto.label_tag }}
+                                {{ form.intubacion_despierto }}
+                                {% if form.intubacion_despierto.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.intubacion_despierto.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.descripcion_intubacion_despierto.label_tag }}
+                                {{ form.descripcion_intubacion_despierto }}
+                                {% if form.descripcion_intubacion_despierto.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.descripcion_intubacion_despierto.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Medical Personnel -->
+                    <!-- Anesthesia Details Section -->
+                    <div class="form-section">
+                        <h3>Detalles de Anestesia</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                {{ form.tipo_anestesia.label_tag }}
+                                {{ form.tipo_anestesia }}
+                                {% if form.tipo_anestesia.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.tipo_anestesia.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.sedacion.label_tag }}
+                                {{ form.sedacion }}
+                                {% if form.sedacion.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.sedacion.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.cooperacion_paciente.label_tag }}
+                                {{ form.cooperacion_paciente }}
+                                {% if form.cooperacion_paciente.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.cooperacion_paciente.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.observaciones.label_tag }}
+                                {{ form.observaciones }}
+                                {% if form.observaciones.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.observaciones.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Procedures Section -->
+                    <div class="form-section">
+                        <h3>Procedimientos de Emergencia</h3>
+                        <div class="form-grid">
+                            <div class="form-group checkbox-group">
+                                {{ form.algoritmo_no_intubacion.label_tag }}
+                                {{ form.algoritmo_no_intubacion }}
+                                {% if form.algoritmo_no_intubacion.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.algoritmo_no_intubacion.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.crico_tiroidotomia.label_tag }}
+                                {{ form.crico_tiroidotomia }}
+                                {% if form.crico_tiroidotomia.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.crico_tiroidotomia.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.traqueostomia_percutanea.label_tag }}
+                                {{ form.traqueostomia_percutanea }}
+                                {% if form.traqueostomia_percutanea.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.traqueostomia_percutanea.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Outcomes and Complications Section -->
+                    <div class="form-section">
+                        <h3>Resultados y Complicaciones</h3>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                {{ form.complicaciones.label_tag }}
+                                {{ form.complicaciones }}
+                                {% if form.complicaciones.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.complicaciones.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.resultado_final.label_tag }}
+                                {{ form.resultado_final }}
+                                {% if form.resultado_final.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.resultado_final.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.fotos_videos.label_tag }}
+                                {{ form.fotos_videos }}
+                                {% if form.fotos_videos.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.fotos_videos.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Morbidity and Mortality Section -->
+                    <div class="form-section">
+                        <h3>Morbilidad y Mortalidad</h3>
+                        <div class="form-grid">
+                            <div class="form-group checkbox-group">
+                                {{ form.morbilidad.label_tag }}
+                                {{ form.morbilidad }}
+                                {% if form.morbilidad.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.morbilidad.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.descripcion_morbilidad.label_tag }}
+                                {{ form.descripcion_morbilidad }}
+                                {% if form.descripcion_morbilidad.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.descripcion_morbilidad.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                {{ form.mortalidad.label_tag }}
+                                {{ form.mortalidad }}
+                                {% if form.mortalidad.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.mortalidad.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group full-width">
+                                {{ form.descripcion_mortalidad.label_tag }}
+                                {{ form.descripcion_mortalidad }}
+                                {% if form.descripcion_mortalidad.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.descripcion_mortalidad.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Personnel Section -->
                     <div class="form-section">
                         <h3>Personal Médico</h3>
                         <div class="form-grid">
-                            {{ form.nombre_anestesiologo }}
-                            {{ form.cedula_profesional }}
-                            {{ form.especialidad }}
-                            {{ form.nombre_residente }}
+                            <div class="form-group">
+                                {{ form.nombre_anestesiologo.label_tag }}
+                                {{ form.nombre_anestesiologo }}
+                                {% if form.nombre_anestesiologo.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.nombre_anestesiologo.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.cedula_profesional.label_tag }}
+                                {{ form.cedula_profesional }}
+                                {% if form.cedula_profesional.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.cedula_profesional.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.especialidad.label_tag }}
+                                {{ form.especialidad }}
+                                {% if form.especialidad.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.especialidad.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                {{ form.nombre_residente.label_tag }}
+                                {{ form.nombre_residente }}
+                                {% if form.nombre_residente.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.nombre_residente.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Form Actions -->
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">
-                        {% if postsurgery %}
-                            Actualizar Formulario
-                        {% else %}
-                            Guardar Formulario
-                        {% endif %}
+                        {% if postsurgery %}Actualizar{% else %}Guardar{% endif %} Formulario
                     </button>
-                    <a href="{% url 'patient-detail' patient.id_paciente %}" class="btn btn-secondary">Cancelar</a>
+                    <a href="{% url 'patient-detail' patient.id_paciente %}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
                 </div>
             </form>
         </div>
     </div>
-</section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/postsurgery_form.js' %}"></script>
 {% endblock %}

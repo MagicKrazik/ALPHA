@@ -16,7 +16,7 @@
 }
 
 .login-section {
-    min-height: 100vh;
+    min-height: 85vh;
     background: linear-gradient(135deg, 
         rgba(43, 69, 112, 0.95), 
         rgba(69, 183, 209, 0.9));

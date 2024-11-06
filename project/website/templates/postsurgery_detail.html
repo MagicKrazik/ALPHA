@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalle Post-Cirugía - {{ form.nombres }} {{ form.apellidos }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/postsurgery_detail.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="section surgery-detail-section">
+    <div class="container">
+        <!-- Header -->
+        <div class="detail-header" data-aos="fade-up">
+            <h1 class="detail-title">Evaluación Post-Quirúrgica</h1>
+            <div class="patient-meta">
+                <h2>{{ form.nombres }} {{ form.apellidos }}</h2>
+                <p class="folio">Folio: {{ form.folio_hospitalizacion }}</p>
+                <p class="date">Fecha de Reporte: {{ form.fecha_reporte|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="detail-grid">
+            <!-- Localización y Personal -->
+            <div class="detail-card" data-aos="fade-up">
+                <h3>Localización y Personal</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Lugar del Problema:</label>
+                        <span>{{ form.lugar_problema }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Presencia de Anestesiólogo:</label>
+                        <span class="status-indicator {% if form.presencia_anestesiologo %}positive{% else %}negative{% endif %}">
+                            {{ form.presencia_anestesiologo|yesno:"Sí,No" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipamiento y Técnicas -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="100">
+                <h3>Equipamiento y Técnicas</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Técnica Utilizada:</label>
+                        <span>{{ form.tecnica_utilizada }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Carro de Vía Aérea Difícil:</label>
+                        <span class="status-indicator {% if form.carro_via_aerea %}positive{% else %}negative{% endif %}">
+                            {{ form.carro_via_aerea|yesno:"Disponible,No Disponible" }}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <label>Tipo de Video-laringoscopía:</label>
+                        <span>{{ form.tipo_video_laringoscopia|default:"No especificado" }}</span>
+                    </div>
+                    {% if form.video_laringoscopia %}
+                    <div class="info-item">
+                        <label>Video de Laringoscopía:</label>
+                        <a href="{{ form.video_laringoscopia.url }}" class="file-link" target="_blank">
+                            Ver Video
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Clasificaciones y Mediciones -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="150">
+                <h3>Clasificaciones y Mediciones</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Clasificación HAN:</label>
+                        <span class="score">{{ form.get_clasificacion_han_display }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Aditamento de Vía Aérea:</label>
+                        <span>{{ form.aditamento_via_aerea }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Tiempo de Pre-oxigenación:</label>
+                        <span>{{ form.tiempo_preoxigenacion }} minutos</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispositivo Supraglótico -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="200">
+                <h3>Dispositivo Supraglótico</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Uso de Supraglótico:</label>
+                        <span class="status-indicator {% if form.uso_supraglotico %}positive{% else %}negative{% endif %}">
+                            {{ form.uso_supraglotico|yesno:"Sí,No" }}
+                        </span>
+                    </div>
+                    {% if form.uso_supraglotico %}
+                    <div class="info-item">
+                        <label>Tipo de Supraglótico:</label>
+                        <span>{{ form.tipo_supraglotico }}</span>
+                    </div>
+                    <div class="info-item full-width">
+                        <label>Problemas con Supraglóticos:</label>
+                        <p class="text-content">{{ form.problemas_supragloticos|linebreaks|default:"No reportados" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Detalles de Intubación -->
+            <div class="detail-card" data-aos="fade-up" data-aos-delay="250">
+                <h3>Detalles de Intubación</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Tipo de Intubación:</label>
+                        <span>{{ form.tipo_intubacion }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Número de Intentos:</label>
+                        <span class="score {% if form.numero_intentos > 1 %}warning{% endif %}">
+                            {{ form.numero_intentos }}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <label>Cormack:</label>
+                        <span class="score">{{ form.get_cormack_display }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>POGO (%):</label>
+                        <span class="score">{{ form.pogo }}%</span>
+                    </div>
+                </div>
+            </div>

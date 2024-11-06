@@ -9,9 +9,10 @@
 
 
 {% block content %}
-<section class="section detail-section">
+<div class="section detail-section">
     <div class="container">
         <div class="detail-container aos-init aos-animate" data-aos="fade-up">
+            <!-- Patient Header -->
             <div class="detail-header">
                 <h1>{{ patient.nombres }} {{ patient.apellidos }}</h1>
                 <div class="detail-meta">
@@ -21,6 +22,7 @@
             </div>
 
             <div class="detail-content">
+                <!-- Personal Information Card -->
                 <div class="info-card aos-init aos-animate" data-aos="fade-up">
                     <h3>Información Personal</h3>
                     <div class="info-grid">
@@ -43,47 +45,81 @@
                     </div>
                 </div>
 
+                <!-- Forms Section -->
                 <div class="forms-section">
+                    <!-- Pre-Surgery Forms -->
                     <div class="forms-card aos-init aos-animate" data-aos="fade-up">
                         <h3>Formularios Pre-Cirugía</h3>
+                        
                         {% if presurgery_forms %}
                             <div class="forms-grid">
                                 {% for form in presurgery_forms %}
-                                <div class="form-item">
-                                    <span class="date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
-                                    <a href="{% url 'presurgery-detail' form.pk %}" class="btn btn-info">Ver Formulario</a>
-                                </div>
+                                    <div class="form-item">
+                                        <div class="form-status">
+                                            <span class="status-badge complete">
+                                                <i class="fas fa-check-circle"></i> Completado
+                                            </span>
+                                            <span class="form-date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
+                                            <a href="{% url 'presurgery-detail' form.folio_hospitalizacion %}" class="btn btn-info">
+                                                <i class="fas fa-file-medical"></i> Ver Formulario Pre-Cirugía
+                                            </a>
+                                        </div>
+                                    </div>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <p class="no-forms">No hay formularios pre-cirugía registrados</p>
+                            <div class="no-forms-message">
+                                No hay formularios pre-cirugía registrados
+                            </div>
+                            <div class="form-actions">
+                                <a href="{% url 'presurgery-create' patient.id_paciente %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Nuevo Formulario Pre-Cirugía
+                                </a>
+                            </div>
                         {% endif %}
-                        <a href="{% url 'presurgery-create' patient.id_paciente %}" class="btn btn-primary">
-                            Nuevo Formulario Pre-Cirugía
-                        </a>
                     </div>
-
+                
+                    <!-- Post-Surgery Forms -->
                     <div class="forms-card aos-init aos-animate" data-aos="fade-up">
                         <h3>Formularios Post-Cirugía</h3>
-                        {% if postsurgery_forms %}
-                            <div class="forms-grid">
-                                {% for form in postsurgery_forms %}
-                                <div class="form-item">
-                                    <span class="date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
-                                    <a href="{% url 'postsurgery-detail' form.pk %}" class="btn btn-info">Ver Formulario</a>
+                        
+                        {% if presurgery_forms %}
+                            {% if postsurgery_forms %}
+                                <div class="forms-grid">
+                                    {% for form in postsurgery_forms %}
+                                        <div class="form-item">
+                                            <div class="form-status">
+                                                <span class="status-badge complete">
+                                                    <i class="fas fa-check-circle"></i> Completado
+                                                </span>
+                                                <span class="form-date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
+                                                <a href="{% url 'postsurgery-detail' form.folio_hospitalizacion.folio_hospitalizacion %}"
+                                                   class="btn btn-info">
+                                                    <i class="fas fa-file-medical"></i> Ver Formulario Post-Cirugía
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
-                            </div>
+                            {% else %}
+                                <div class="no-forms-message">
+                                    No hay formularios post-cirugía registrados
+                                </div>
+                                <div class="form-actions">
+                                    <a href="{% url 'postsurgery-create' patient.id_paciente %}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Nuevo Formulario Post-Cirugía
+                                    </a>
+                                </div>
+                            {% endif %}
                         {% else %}
-                            <p class="no-forms">No hay formularios post-cirugía registrados</p>
+                            <div class="no-forms-message">
+                                Se requiere formulario pre-cirugía antes de crear post-cirugía
+                            </div>
                         {% endif %}
-                        <a href="{% url 'postsurgery-create' patient.id_paciente %}" class="btn btn-primary">
-                            Nuevo Formulario Post-Cirugía
-                        </a>
                     </div>
                 </div>
-            </div>
 
+            <!-- Action Buttons -->
             <div class="detail-actions">
                 <a href="{% url 'patient-update' patient.id_paciente %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> Editar Información
@@ -97,8 +133,7 @@
             </div>
         </div>
     </div>
-</section>
-
+</div>
 {% endblock %}
 
 {% block extra_js %}

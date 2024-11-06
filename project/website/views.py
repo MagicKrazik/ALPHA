@@ -235,9 +235,22 @@ def patient_detail(request, pk):
         messages.error(request, _('No tienes permiso para ver esta información.'))
         return redirect('patient-list')
     
+    # Get pre-surgery forms for this patient
+    presurgery_forms = PreSurgeryForm.objects.filter(
+        folio_hospitalizacion__startswith=f"PRE-{patient.folio_hospitalizacion}"
+    ).order_by('-fecha_reporte')
+    
+    # Get post-surgery forms for this patient
+    postsurgery_forms = PostDuringSurgeryForm.objects.filter(
+        folio_hospitalizacion__folio_hospitalizacion__in=presurgery_forms.values_list('folio_hospitalizacion', flat=True)
+    ).order_by('-folio_hospitalizacion__fecha_reporte')
+    
     context = {
-        'patient': patient
+        'patient': patient,
+        'presurgery_forms': presurgery_forms,
+        'postsurgery_forms': postsurgery_forms,
     }
+    
     return render(request, 'patient_detail.html', context)
 
 @login_required
@@ -814,3 +827,24 @@ def calculate_average_age(patients):
         except:
             continue
     return round(total_age / max(count, 1), 1)
+
+
+@login_required
+def presurgery_detail(request, pk):
+    # Get the pre-surgery form
+    form = get_object_or_404(PreSurgeryForm, folio_hospitalizacion=pk)
+    
+    # Get the related patient
+    patient = get_object_or_404(Patient, folio_hospitalizacion=pk.replace('PRE-', ''))
+    
+    # Check if user has permission to view this form
+    if patient.medico != request.user and not request.user.is_staff:
+        messages.error(request, 'No tienes permiso para ver este formulario.')
+        return redirect('patient-list')
+    
+    context = {
+        'form': form,
+        'patient': patient
+    }
+    
+    return render(request, 'presurgery_detail.html', context)
