@@ -17,7 +17,7 @@ from .forms import PatientForm
 from django.utils.translation import gettext_lazy as _
 from .forms import PreSurgeryForm, PostSurgeryForm, PreSurgeryCreateForm, PostSurgeryCreateForm
 from .models import PostDuringSurgeryForm
-from django.db.models import Count, Avg, Q, Sum
+from django.db.models import Count, Avg, Q, Sum, StdDev
 from django.db.models.functions import TruncMonth, TruncWeek, ExtractHour
 import json
 from datetime import datetime, timedelta
@@ -27,6 +27,9 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from io import BytesIO
 import pandas as pd
+from .risk_calculator import RiskCalculator
+from django.db.models import Case, When, IntegerField
+
 
 
 
@@ -468,139 +471,6 @@ def postsurgery_update(request, pk):
     })
 
 
-## Dashboard view:
-
-@login_required
-def dashboard(request):
-    # Get current user's patients
-    user_patients = Patient.objects.filter(medico=request.user, activo=True)
-    
-    # Basic Statistics
-    total_patients = user_patients.count()
-    patients_this_month = user_patients.filter(
-        fecha_registro__month=datetime.now().month
-    ).count()
-    
-    # PreSurgery Statistics
-    presurgery_forms = PreSurgeryForm.objects.filter(
-        medico=request.user.get_full_name()
-    )
-    
-    # ASA Score Distribution
-    asa_distribution = (presurgery_forms
-        .values('estado_fisico_asa')
-        .annotate(count=Count('estado_fisico_asa'))
-        .order_by('estado_fisico_asa'))
-    
-    # Mallampati Distribution
-    mallampati_distribution = (presurgery_forms
-        .values('mallampati')
-        .annotate(count=Count('mallampati'))
-        .order_by('mallampati'))
-    
-    # Airway Risk Factors
-    high_risk_airways = presurgery_forms.filter(
-        Q(mallampati__gte=3) |
-        Q(patil_aldrete__gte=3) |
-        Q(distancia_inter_incisiva__lt=3)
-    ).count()
-    
-    # Monthly Surgeries Trend
-    monthly_surgeries = (presurgery_forms
-        .annotate(month=TruncMonth('fecha_reporte'))
-        .values('month')
-        .annotate(count=Count('folio_hospitalizacion'))  # Changed from 'id' to 'folio_hospitalizacion'
-        .order_by('month'))
-    
-    # BMI Distribution
-    bmi_distribution = {
-        'underweight': presurgery_forms.filter(imc__lt=18.5).count(),
-        'normal': presurgery_forms.filter(imc__range=(18.5, 24.9)).count(),
-        'overweight': presurgery_forms.filter(imc__range=(25, 29.9)).count(),
-        'obese': presurgery_forms.filter(imc__gte=30).count()
-    }
-    
-    # Age Distribution
-    def calculate_age(birth_date):
-        return (datetime.now().date() - birth_date).days // 365
-    
-    age_distribution = {
-        '0-18': 0,
-        '19-40': 0,
-        '41-60': 0,
-        '60+': 0
-    }
-    
-    for patient in user_patients:
-        age = calculate_age(patient.fecha_nacimiento)
-        if age <= 18:
-            age_distribution['0-18'] += 1
-        elif age <= 40:
-            age_distribution['19-40'] += 1
-        elif age <= 60:
-            age_distribution['41-60'] += 1
-        else:
-            age_distribution['60+'] += 1
-    
-    # Complications Analysis
-    postsurgery_forms = PostDuringSurgeryForm.objects.filter(
-        folio_hospitalizacion__in=presurgery_forms.values('folio_hospitalizacion')
-    )
-    
-    complications_data = {
-        'total_surgeries': postsurgery_forms.count(),
-        'with_complications': postsurgery_forms.filter(
-            complicaciones__isnull=False
-        ).exclude(complicaciones='').count(),
-        'with_morbidity': postsurgery_forms.filter(morbilidad=True).count(),
-        'with_mortality': postsurgery_forms.filter(mortalidad=True).count()
-    }
-    
-    # Calculate percentages
-    total_surgeries = complications_data['total_surgeries'] or 1  # Prevent division by zero
-    complications_data.update({
-        'complications_percentage': round(
-            (complications_data['with_complications'] / total_surgeries) * 100
-        ),
-        'morbidity_percentage': round(
-            (complications_data['with_morbidity'] / total_surgeries) * 100
-        ),
-        'mortality_percentage': round(
-            (complications_data['with_mortality'] / total_surgeries) * 100
-        )
-    })
-
-    # Intubation Success Analysis
-    intubation_data = {
-        'total_attempts': postsurgery_forms.count(),
-        'first_attempt': postsurgery_forms.filter(numero_intentos=1).count(),
-        'multiple_attempts': postsurgery_forms.filter(numero_intentos__gt=1).count(),
-    }
-    
-    # Calculate first attempt success rate
-    total_intubations = intubation_data['total_attempts'] or 1  # Prevent division by zero
-    intubation_data['success_rate'] = round(
-        (intubation_data['first_attempt'] / total_intubations) * 100
-    )
-
-    context = {
-        'total_patients': total_patients,
-        'patients_this_month': patients_this_month,
-        'high_risk_airways': high_risk_airways,
-        'asa_distribution': json.dumps(list(asa_distribution)),
-        'mallampati_data': json.dumps(list(mallampati_distribution)),
-        'monthly_surgeries': json.dumps([{
-            'month': d['month'].strftime('%Y-%m-%d') if d['month'] else None,
-            'count': d['count']
-        } for d in monthly_surgeries]),
-        'bmi_distribution': json.dumps(bmi_distribution),
-        'age_distribution': json.dumps(age_distribution),
-        'complications_data': complications_data,
-        'intubation_data': intubation_data,
-    }
-    
-    return render(request, 'dashboard.html', context)
-
 @login_required
 def get_detailed_stats(request):
     """API endpoint for additional dashboard statistics"""
@@ -894,3 +764,158 @@ def presurgery_detail(request, pk):
     }
     
     return render(request, 'presurgery_detail.html', context)
+
+
+
+@login_required
+def dashboard(request):
+    """
+    Enhanced dashboard view with complete patient information
+    """
+    # Get current user's patients
+    user_patients = Patient.objects.filter(medico=request.user, activo=True)
+    
+    # Get forms data
+    presurgery_forms = PreSurgeryForm.objects.filter(
+        medico=request.user.get_full_name()
+    )
+    
+    postsurgery_forms = PostDuringSurgeryForm.objects.filter(
+        folio_hospitalizacion__in=presurgery_forms.values('folio_hospitalizacion')
+    )
+    
+    # Basic Statistics
+    stats = {
+        'total_patients': user_patients.count(),
+        'active_patients': user_patients.filter(
+            fecha_registro__gte=timezone.now() - timedelta(days=30)
+        ).count(),
+        'total_surgeries': presurgery_forms.count(),
+        'completed_surgeries': postsurgery_forms.count()
+    }
+    
+    # ASA Distribution
+    asa_distribution = list(presurgery_forms.values('estado_fisico_asa')
+        .annotate(count=Count('estado_fisico_asa'))
+        .order_by('estado_fisico_asa'))
+    
+    # Complications Analysis
+    complications_data = {
+        'total': postsurgery_forms.count(),
+        'with_complications': postsurgery_forms.filter(
+            complicaciones__isnull=False
+        ).exclude(complicaciones='').count(),
+        'tipos': list(postsurgery_forms.exclude(
+            complicaciones=''
+        ).values('complicaciones').annotate(
+            count=Count('complicaciones')
+        ).order_by('-count')[:5])
+    }
+    
+    # Airway Difficulty Metrics
+    airway_metrics = {
+        'difficult_airways': presurgery_forms.filter(
+            Q(mallampati__gte=3) |
+            Q(patil_aldrete__gte=3) |
+            Q(distancia_inter_incisiva__lt=3)
+        ).count(),
+        'mallampati_distribution': list(presurgery_forms.values('mallampati')
+            .annotate(count=Count('mallampati'))
+            .order_by('mallampati')),
+        'successful_intubation': postsurgery_forms.filter(numero_intentos=1).count(),
+        'multiple_attempts': postsurgery_forms.filter(numero_intentos__gt=1).count()
+    }
+    
+    # BMI Distribution
+    bmi_ranges = {
+        'underweight': presurgery_forms.filter(imc__lt=18.5).count(),
+        'normal': presurgery_forms.filter(imc__range=(18.5, 24.9)).count(),
+        'overweight': presurgery_forms.filter(imc__range=(25, 29.9)).count(),
+        'obese': presurgery_forms.filter(imc__gte=30).count()
+    }
+    
+    # Monthly Trends - Fixed Query
+    monthly_data = presurgery_forms.annotate(
+        month=TruncMonth('fecha_reporte')
+    ).values('month').annotate(
+        surgeries=Count('folio_hospitalizacion'),
+        complications=Sum(
+            Case(
+                When(post_surgery_form__complicaciones__isnull=False, then=1),
+                default=0,
+                output_field=IntegerField(),
+            )
+        )
+    ).order_by('month')
+    
+    # Recent High Risk Cases
+    high_risk_cases = []
+    for pre_form in presurgery_forms.filter(
+        Q(estado_fisico_asa__gte=4) |
+        Q(mallampati__gte=3) |
+        Q(patil_aldrete__gte=3)
+    ).order_by('-fecha_reporte')[:10]:
+        risk_factors = []
+        if pre_form.estado_fisico_asa >= 4:
+            risk_factors.append(f'ASA {pre_form.estado_fisico_asa}')
+        if pre_form.mallampati >= 3:
+            risk_factors.append(f'Mallampati {pre_form.mallampati}')
+        if pre_form.patil_aldrete >= 3:
+            risk_factors.append('Patil-Aldrete Elevado')
+        if pre_form.imc >= 30:
+            risk_factors.append('Obesidad')
+            
+        high_risk_cases.append({
+            'patient_name': f"{pre_form.nombres} {pre_form.apellidos}",
+            'folio': pre_form.folio_hospitalizacion,
+            'risk_factors': risk_factors,
+            'fecha': pre_form.fecha_reporte
+        })
+    
+    context = {
+        'stats': stats,
+        'asa_distribution': json.dumps(asa_distribution),
+        'complications_data': json.dumps(complications_data),
+        'airway_metrics': json.dumps(airway_metrics),
+        'bmi_distribution': json.dumps(bmi_ranges),
+        'monthly_data': json.dumps([{
+            'month': data['month'].strftime('%Y-%m-%d'),
+            'surgeries': data['surgeries'],
+            'complications': data['complications'] or 0  # Handle None values
+        } for data in monthly_data]),
+        'high_risk_cases': high_risk_cases,
+    }
+    
+    return render(request, 'dashboard.html', context)
+
+@login_required
+def get_risk_trends(request):
+    """API endpoint for risk trend analysis"""
+    try:
+        date_range = int(request.GET.get('date_range', '30'))
+        start_date = datetime.now() - timedelta(days=date_range)
+        
+        # Get trends data
+        presurgery_forms = PreSurgeryForm.objects.filter(
+            medico=request.user.get_full_name(),
+            fecha_reporte__gte=start_date
+        )
+        
+        # Calculate risk trends
+        risk_trends = (presurgery_forms
+            .annotate(week=TruncWeek('fecha_reporte'))
+            .values('week')
+            .annotate(
+                high_risk=Count('id', filter=Q(estado_fisico_asa__gte=4)),
+                medium_risk=Count('id', filter=Q(estado_fisico_asa=3)),
+                low_risk=Count('id', filter=Q(estado_fisico_asa__lte=2))
+            )
+            .order_by('week')
+        )
+        
+        return JsonResponse({
+            'trends': list(risk_trends)
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

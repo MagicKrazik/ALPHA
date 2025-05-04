@@ -37,6 +37,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('api/dashboard/stats/', views.get_dashboard_stats, name='dashboard-stats'),
     path('api/dashboard/export/', views.export_dashboard, name='dashboard-export'),
+    path('api/dashboard/risk-trends/', views.get_risk_trends, name='risk-trends'),
 
 
 

@@ -8,123 +8,109 @@
 {% endblock %}
 
 {% block content %}
-<section class="dashboard-section">
+
+<!-- dashboard.html -->
+<div class="section dashboard-section">
     <div class="container">
-        <div class="dashboard-filters">
-            <div class="filter-group">
-                <select id="dateFilter" class="filter-select">
-                    <option value="7">Última Semana</option>
-                    <option value="30" selected>Último Mes</option>
-                    <option value="90">Último Trimestre</option>
-                    <option value="365">Último Año</option>
-                </select>
-                <select id="categoryFilter" class="filter-select">
-                    <option value="all">Todas las Categorías</option>
-                    <option value="surgeries">Cirugías</option>
-                    <option value="complications">Complicaciones</option>
-                    <option value="airway">Vía Aérea</option>
-                </select>
+        <!-- Statistics Overview -->
+        <div class="stats-overview" aos="fade-up">
+            <div class="stat-card">
+                <div class="stat-title">Total Pacientes</div>
+                <div class="stat-value">{{ stats.total_patients }}</div>
             </div>
-            <div class="filter-actions">
-                <button id="refreshDashboard" class="btn btn-secondary">
-                    <i class="fas fa-sync-alt"></i> Actualizar
-                </button>
-                <button id="exportDashboard" class="btn btn-primary">
-                    <i class="fas fa-download"></i> Exportar
-                </button>
+            <div class="stat-card">
+                <div class="stat-title">Cirugías Realizadas</div>
+                <div class="stat-value">{{ stats.completed_surgeries }}</div>
             </div>
-        </div>
-        <!-- Quick Stats Cards -->
-        <div class="quick-stats">
-            <div class="stat-card" data-aos="fade-up">
-                <div class="stat-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>Total Pacientes</h3>
-                    <p class="stat-number">{{ total_patients }}</p>
-                </div>
+            <div class="stat-card warning">
+                <div class="stat-title">Vías Aéreas Difíciles</div>
+                <div class="stat-value">{{ airway_metrics.difficult_airways }}</div>
             </div>
-            
-            <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="stat-icon">
-                    <i class="fas fa-user-md"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>Pacientes Este Mes</h3>
-                    <p class="stat-number">{{ patients_this_month }}</p>
-                </div>
-            </div>
-            
-            <div class="stat-card warning" data-aos="fade-up" data-aos-delay="200">
-                <div class="stat-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>Vía Aérea Difícil</h3>
-                    <p class="stat-number">{{ high_risk_airways }}</p>
-                </div>
+            <div class="stat-card danger">
+                <div class="stat-title">Casos de Alto Riesgo</div>
+                <div class="stat-value">{{ complications_data.with_complications }}</div>
             </div>
         </div>
 
         <!-- Charts Grid -->
         <div class="charts-grid">
             <!-- ASA Distribution -->
-            <div class="chart-card" data-aos="fade-up">
+            <div class="chart-card">
                 <h3>Distribución ASA</h3>
                 <canvas id="asaChart"></canvas>
             </div>
-
+            
+            <!-- Complications -->
+            <div class="chart-card">
+                <h3>Complicaciones</h3>
+                <canvas id="complicationsChart"></canvas>
+            </div>
+            
+            <!-- Airway Difficulty -->
+            <div class="chart-card">
+                <h3>Dificultad de Vía Aérea</h3>
+                <canvas id="airwayChart"></canvas>
+            </div>
+            
             <!-- Monthly Trend -->
-            <div class="chart-card" data-aos="fade-up">
-                <h3>Tendencia Mensual de Cirugías</h3>
-                <canvas id="monthlyTrendChart"></canvas>
-            </div>
-
-            <!-- BMI Distribution -->
-            <div class="chart-card" data-aos="fade-up">
-                <h3>Distribución IMC</h3>
-                <canvas id="bmiChart"></canvas>
-            </div>
-
-            <!-- Age Distribution -->
-            <div class="chart-card" data-aos="fade-up">
-                <h3>Distribución por Edad</h3>
-                <canvas id="ageChart"></canvas>
+            <div class="chart-card">
+                <h3>Tendencia Mensual</h3>
+                <canvas id="trendChart"></canvas>
             </div>
         </div>
 
-        <!-- Complications Section -->
-        <div class="outcomes-section">
-            <h2>Complicaciones y Resultados</h2>
-            <div class="outcomes-grid">
-                <div class="outcome-card">
-                    <h4>Tasa de Complicaciones</h4>
-                    <div class="circular-progress">
-                        <span class="progress-value">{{ complications_data.complications_percentage }}%</span>
-                    </div>
-                </div>
-                <div class="outcome-card">
-                    <h4>Éxito Primera Intubación</h4>
-                    <div class="circular-progress">
-                        <span class="progress-value">{{ intubation_data.success_rate }}%</span>
-                    </div>
-                </div>
+        <!-- High Risk Cases -->
+        <div class="risk-cases-section">
+            <h3>Casos de Alto Riesgo Recientes</h3>
+            <div class="risk-cases-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Factores de Riesgo</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for case in high_risk_cases %}
+                        <tr>
+                            <td>{{ case.patient_name }}</td>
+                            <td>
+                                {% for factor in case.risk_factors %}
+                                <span class="risk-factor">{{ factor }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ case.fecha|date:"d/m/Y" }}</td>
+                            <td>
+                                <a href="{% url 'presurgery-detail' case.folio %}" 
+                                   class="btn btn-sm btn-primary">Ver Detalle</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-</section>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Make data available to dashboard.js
-    const asaData = {{ asa_distribution|safe }};
-    const monthlyData = {{ monthly_surgeries|safe }};
-    const bmiDistribution = {{ bmi_distribution|safe }};
-    const ageDistribution = {{ age_distribution|safe }};
-    const mallampatiData = {{ mallampati_data|safe }};
+<script id="asa-data" type="application/json">
+    {{ asa_distribution|safe }}
 </script>
+<script id="complications-data" type="application/json">
+    {{ complications_data|safe }}
+</script>
+<script id="airway-metrics" type="application/json">
+    {{ airway_metrics|safe }}
+</script>
+<script id="monthly-data" type="application/json">
+    {{ monthly_data|safe }}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

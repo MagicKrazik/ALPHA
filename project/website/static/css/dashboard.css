@@ -1,4 +1,4 @@
-/* static/css/dashboard.css */
+/* dashboard.css */
 :root {
     --primary-color: #2B4570;
     --secondary-color: #45B7D1;
@@ -12,16 +12,17 @@
     --hover-shadow: 0 8px 24px rgba(43, 69, 112, 0.15);
 }
 
+/* Dashboard Layout */
 .dashboard-section {
-    padding: 4rem 0;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 2rem 0;
     min-height: calc(100vh - 76px);
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
-/* Quick Stats Cards */
-.quick-stats {
+/* Stats Overview */
+.stats-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -30,11 +31,9 @@
     background: white;
     border-radius: 12px;
     padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
     box-shadow: var(--card-shadow);
     transition: all 0.3s ease;
+    border-left: 4px solid var(--primary-color);
 }
 
 .stat-card:hover {
@@ -42,44 +41,43 @@
     box-shadow: var(--hover-shadow);
 }
 
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.75rem;
-    color: white;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+.stat-card.warning {
+    border-left-color: var(--warning-color);
 }
 
-.warning .stat-icon {
-    background: linear-gradient(135deg, var(--warning-color), var(--accent-color));
+.stat-card.danger {
+    border-left-color: var(--danger-color);
 }
 
-.stat-content {
-    flex: 1;
-}
-
-.stat-content h3 {
-    color: #666;
+.stat-title {
+    color: var(--text-color);
     font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.8;
     margin-bottom: 0.5rem;
 }
 
-.stat-number {
-    font-size: 1.75rem;
-    font-weight: 700;
+.stat-value {
     color: var(--primary-color);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.warning .stat-value {
+    color: var(--warning-color);
+}
+
+.danger .stat-value {
+    color: var(--danger-color);
 }
 
 /* Charts Grid */
 .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 2rem;
-    margin-bottom: 3rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .chart-card {
@@ -89,6 +87,7 @@
     box-shadow: var(--card-shadow);
     transition: all 0.3s ease;
     height: 350px;
+    position: relative;
 }
 
 .chart-card:hover {
@@ -97,293 +96,82 @@
 
 .chart-card h3 {
     color: var(--primary-color);
-    font-size: 1.25rem;
-    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--secondary-color);
-    text-align: center;
 }
 
-/* Outcomes Section */
-.outcomes-section {
-    margin-bottom: 3rem;
-}
-
-.section-title {
-    color: var(--primary-color);
-    font-size: 1.75rem;
-    text-align: center;
-    margin-bottom: 2rem;
-    position: relative;
-}
-
-.section-title::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 3px;
-    background: var(--accent-color);
-    border-radius: 2px;
-}
-
-.outcomes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-}
-
-.outcome-card {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    text-align: center;
-    box-shadow: var(--card-shadow);
-    transition: all 0.3s ease;
-}
-
-.outcome-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--hover-shadow);
-}
-
-.outcome-card h4 {
-    color: var(--primary-color);
-    font-size: 1.1rem;
-    margin-bottom: 1.5rem;
-}
-
-/* Circular Progress */
-.circular-progress {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    background: conic-gradient(
-        var(--primary-color) var(--progress),
-        #eee var(--progress)
-    );
-    position: relative;
-}
-
-.circular-progress::before {
-    content: '';
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: white;
-}
-
-.progress-value {
-    position: relative;
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-/* Risk Factors Section */
-.risk-factors-section {
-    margin-bottom: 3rem;
-}
-
-.risk-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-}
-
-.risk-card {
+/* Risk Cases Section */
+.risk-cases-section {
     background: white;
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
 }
 
-.risk-card h4 {
+.risk-cases-section h3 {
     color: var(--primary-color);
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-    text-align: center;
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--secondary-color);
 }
 
-/* Date Range Selector */
-.date-range-container {
-    max-width: 600px;
-    margin: 0 auto 2rem;
-    text-align: center;
+.risk-cases-table {
+    width: 100%;
+    overflow-x: auto;
 }
 
-.date-range-selector {
+.risk-cases-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.risk-cases-table th,
+.risk-cases-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(43, 69, 112, 0.1);
+}
+
+.risk-cases-table th {
+    background-color: rgba(43, 69, 112, 0.05);
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.risk-factor {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(43, 69, 112, 0.1);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    margin: 0.25rem;
+    color: var(--primary-color);
+}
+
+/* Button Styles */
+.btn {
     display: inline-flex;
-    background: white;
-    border-radius: 8px;
-    padding: 0.5rem;
-    box-shadow: var(--card-shadow);
-}
-
-.date-range-selector button {
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
-    border: none;
-    background: none;
-    color: #666;
-    cursor: pointer;
     border-radius: 6px;
+    font-weight: 500;
     transition: all 0.3s ease;
+    text-decoration: none;
 }
 
-.date-range-selector button.active {
+.btn-primary {
     background: var(--primary-color);
     color: white;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .chart-card {
-        height: 300px;
-    }
-}
-
-@media (max-width: 768px) {
-    .dashboard-section {
-        padding: 2rem 1rem;
-    }
-
-    .quick-stats {
-        grid-template-columns: 1fr;
-    }
-
-    .stat-card {
-        padding: 1rem;
-    }
-
-    .stat-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.5rem;
-    }
-
-    .stat-number {
-        font-size: 1.5rem;
-    }
-
-    .chart-card {
-        height: 250px;
-        padding: 1rem;
-    }
-
-    .chart-card h3 {
-        font-size: 1.1rem;
-    }
-
-    .circular-progress {
-        width: 120px;
-        height: 120px;
-    }
-
-    .circular-progress::before {
-        width: 90px;
-        height: 90px;
-    }
-
-    .progress-value {
-        font-size: 1.5rem;
-    }
-
-    .section-title {
-        font-size: 1.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .stat-card {
-        flex-direction: column;
-        text-align: center;
-        gap: 1rem;
-    }
-
-    .chart-card {
-        height: 200px;
-    }
-
-    .outcomes-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .date-range-selector {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-}
-
-/* Print Styles */
-@media print {
-    .dashboard-section {
-        padding: 0;
-    }
-
-    .chart-card,
-    .stat-card,
-    .outcome-card {
-        break-inside: avoid;
-        box-shadow: none;
-    }
-
-    .date-range-container {
-        display: none;
-    }
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-[data-aos="fade-up"] {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.6s ease;
-}
-
-[data-aos="fade-up"].aos-animate {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-    .stat-card,
-    .chart-card,
-    .outcome-card {
-        transition: none;
-    }
-
-    .stat-card:hover,
-    .outcome-card:hover {
-        transform: none;
-    }
-
-    [data-aos] {
-        transition: none !important;
-        transform: none !important;
-        opacity: 1 !important;
-    }
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
 }
 
 /* Loading States */
@@ -399,104 +187,146 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.2),
-        transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     animation: loading 1.5s infinite;
 }
 
 @keyframes loading {
-    0% {
-        transform: translateX(-100%);
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 1024px) {
+    .dashboard-section {
+        padding: 1.5rem;
     }
-    100% {
-        transform: translateX(100%);
+
+    .stats-overview {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-card {
+        height: 300px;
     }
 }
 
-/* Add to dashboard.css */
-.loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
+@media (max-width: 768px) {
+    .dashboard-section {
+        padding: 1rem;
+    }
+
+    .stats-overview {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: 1.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+    }
+
+    .chart-card {
+        height: 250px;
+        padding: 1rem;
+    }
+
+    .risk-cases-table {
+        margin: 0 -1rem;
+    }
+
+    .risk-cases-table th,
+    .risk-cases-table td {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .risk-factor {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+    }
 }
 
-.loading-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
+@media (max-width: 480px) {
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .chart-card {
+        height: 200px;
+    }
+
+    .risk-cases-table {
+        overflow-x: scroll;
+    }
+
+    .risk-cases-table table {
+        min-width: 500px;
+    }
 }
 
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--primary-color);
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
+/* Print Styles */
+@media print {
+    .dashboard-section {
+        padding: 0;
+    }
+
+    .stat-card,
+    .chart-card,
+    .risk-cases-section {
+        break-inside: avoid;
+        box-shadow: none;
+    }
+
+    .stat-card:hover,
+    .chart-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
 }
 
-/* Add loading pulse animation to cards */
-.stat-card.loading::after,
-.chart-card.loading::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent
-    );
-    animation: pulse 1.5s ease-in-out infinite;
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .stat-card,
+    .chart-card {
+        transition: none;
+    }
+
+    .stat-card:hover,
+    .chart-card:hover {
+        transform: none;
+    }
 }
 
-/* Add to dashboard.css */
-.notification-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-}
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-color: #e1e1e1;
+        --background-color: #1a1a1a;
+    }
 
-.notification {
-    background: white;
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateX(120%);
-    transition: transform 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
+    .stat-card,
+    .chart-card,
+    .risk-cases-section {
+        background: #2d2d2d;
+    }
 
-.notification.show {
-    transform: translateX(0);
-}
+    .risk-factor {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
 
-.notification.success {
-    border-left: 4px solid var(--success-color);
-}
-
-.notification.error {
-    border-left: 4px solid var(--danger-color);
-}
-
-.notification.info {
-    border-left: 4px solid var(--primary-color);
+    .risk-cases-table th {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
 }
