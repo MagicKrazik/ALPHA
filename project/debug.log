@@ -813,3 +813,5 @@ Traceback (most recent call last):
     raise FieldError(
 django.core.exceptions.FieldError: Cannot resolve keyword 'postduringsurgeryform' into field. Choices are: alergias, antecedentes_dificultad, apellidos, ayuno_hrs, codigo_barras, comorbilidades, descripcion_dificultad, desviacion_traquea, diagnostico_preoperatorio, distancia_inter_incisiva, distancia_tiro_mentoniana, dosis_glp1, estado_fisico_asa, estridor_laringeo, estudios_radiologicos_va, evaluacion_preoperatoria, fc, fecha_nacimiento, fecha_reporte, folio_hospitalizacion, glasgow, imagen_usg_gastrico, imc, macocha, mallampati, medicamentos, medico, medico_tratante, month, nombres, observaciones, patil_aldrete, peso, post_surgery_form, problemas_deglucion, protrusion_mandibular, spo2_aire, spo2_oxigeno, stop_bang, surgeries, ta, tabaquismo, talla, usg_gastrico_ml, uso_glp1, uso_usg_gastrico
 "GET /dashboard/ HTTP/1.1" 500 126785
+"GET / HTTP/1.1" 500 59
+"GET /favicon.ico HTTP/1.1" 500 59

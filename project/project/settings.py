@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ''
+SECRET_KEY = 'django-insecure-0*d9%)=-$n&$p()%_1ea6q9+#$u0_4-0xve&a8j!s)3gl9cxax'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -147,7 +147,7 @@ EMAIL_HOST = 'smtp.gmail.com'  # Or your email provider's SMTP server
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'carlos.horacio.olivares@gmail.com'  # Your email address
-EMAIL_HOST_PASSWORD = ''  # Your email password or app-specific password
+EMAIL_HOST_PASSWORD = 'yscm vwgx mste oojg'  # Your email password or app-specific password
 DEFAULT_FROM_EMAIL = 'carlos.horacio.olivares@gmail.com'
 CONTACT_EMAIL = 'carlos.horacio.olivares@gmail.com'  # Email where contact form submissions will be sent
 
