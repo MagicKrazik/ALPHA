@@ -14,11 +14,7 @@ from django.urls import reverse
 import re
 
 
-
 class Patient(models.Model):
-    """
-    Patient model for storing patient information
-    """
     # Identification and linking fields
     id_paciente = models.UUIDField(
         primary_key=True,
@@ -26,10 +22,15 @@ class Patient(models.Model):
         editable=False,
         verbose_name=_("ID Paciente")
     )
-    folio_hospitalizacion = models.CharField(
-        max_length=50,
-        unique=True,
-        verbose_name=_("Folio Hospitalización")
+    
+    # Link to User (optional, for patients who register themselves)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='patient_profile',
+        verbose_name=_("Usuario")
     )
     
     # Personal information
@@ -44,12 +45,37 @@ class Patient(models.Model):
     fecha_nacimiento = models.DateField(
         verbose_name=_("Fecha de Nacimiento")
     )
+    email = models.EmailField(
+        verbose_name=_("Correo electrónico"),
+        blank=True,
+        null=True
+    )
+    telefono = models.CharField(
+        max_length=15,
+        verbose_name=_("Teléfono"),
+        blank=True,
+        null=True
+    )
     
-    # Medical relationship
-    medico = models.ForeignKey(
+    # Hospital information
+    folio_hospitalizacion = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name=_("Folio de Hospitalización")
+    )
+    
+    # Doctor relationship (multiple doctors can treat one patient)
+    medico_principal = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        verbose_name=_("Médico Tratante")
+        related_name='patients_primary',
+        verbose_name=_("Médico Principal")
+    )
+    medicos_secundarios = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='patients_secondary',
+        blank=True,
+        verbose_name=_("Médicos Secundarios")
     )
     
     # Barcode field
@@ -71,6 +97,10 @@ class Patient(models.Model):
         default=True,
         verbose_name=_("Activo")
     )
+    aceptacion_privacidad = models.BooleanField(
+        default=False,
+        verbose_name=_("Aceptación de Política de Privacidad")
+    )
 
     class Meta:
         verbose_name = _("Paciente")
@@ -78,7 +108,7 @@ class Patient(models.Model):
         ordering = ['-fecha_registro']
         indexes = [
             models.Index(fields=['folio_hospitalizacion']),
-            models.Index(fields=['medico', 'fecha_registro'])
+            models.Index(fields=['medico_principal', 'fecha_registro'])
         ]
 
     def __str__(self):
@@ -86,6 +116,83 @@ class Patient(models.Model):
 
     def get_absolute_url(self):
         return reverse('patient-detail', args=[str(self.id_paciente)])
+
+
+class TreatmentCase(models.Model):
+    """
+    Represents a single treatment case with its unique folio_hospitalizacion
+    A patient can have multiple treatment cases
+    """
+    id_case = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        verbose_name=_("ID Caso")
+    )
+    
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='treatment_cases',
+        verbose_name=_("Paciente")
+    )
+    
+    folio_hospitalizacion = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name=_("Folio de Hospitalización")
+    )
+    
+    medico_asignado = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='treatment_cases',
+        verbose_name=_("Médico Asignado")
+    )
+    
+    fecha_inicio = models.DateField(
+        verbose_name=_("Fecha de Inicio"),
+        default=timezone.now
+    )
+    
+    fecha_fin = models.DateField(
+        verbose_name=_("Fecha de Finalización"),
+        null=True,
+        blank=True
+    )
+    
+    diagnostico = models.TextField(
+        verbose_name=_("Diagnóstico"),
+        blank=True
+    )
+    
+    activo = models.BooleanField(
+        default=True,
+        verbose_name=_("Caso Activo")
+    )
+    
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Fecha de Registro")
+    )
+    
+    ultima_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("Última Actualización")
+    )
+
+    class Meta:
+        verbose_name = _("Caso de Tratamiento")
+        verbose_name_plural = _("Casos de Tratamiento")
+        ordering = ['-fecha_inicio']
+        indexes = [
+            models.Index(fields=['folio_hospitalizacion']),
+            models.Index(fields=['patient']),
+            models.Index(fields=['medico_asignado'])
+        ]
+
+    def __str__(self):
+        return f"{self.folio_hospitalizacion} - {self.patient.nombres} {self.patient.apellidos}"
 
 
 
@@ -210,6 +317,22 @@ class PreSurgeryForm(models.Model):
     """
     Model for pre-surgery evaluation form containing patient information and initial assessments.
     """
+
+    # Link to TreatmentCase instead of directly to Patient
+    treatment_case = models.OneToOneField(
+        TreatmentCase,
+        on_delete=models.CASCADE,
+        verbose_name=_("Caso de Tratamiento"),
+        related_name='pre_surgery_form'
+    )
+
+    # Use folio_hospitalizacion as a field, not as primary key
+    folio_hospitalizacion = models.CharField(
+        max_length=50,
+        verbose_name=_("Folio de Hospitalización"),
+        editable=False
+    )
+
     ASA_CHOICES = [
         (1, 'I'),
         (2, 'II'),
@@ -222,13 +345,6 @@ class PreSurgeryForm(models.Model):
     MALLAMPATI_CHOICES = [(i, str(i)) for i in range(1, 5)]
     PATIL_ALDRETE_CHOICES = [(i, str(i)) for i in range(1, 5)]
     PROTRUSION_CHOICES = [(i, str(i)) for i in range(1, 5)]
-
-    # Primary Key
-    folio_hospitalizacion = models.CharField(
-        max_length=50, 
-        primary_key=True,
-        verbose_name="Folio Hospitalización"
-    )
     
     # Patient Information
     nombres = models.CharField(max_length=100, verbose_name="Nombres")
@@ -377,6 +493,12 @@ class PreSurgeryForm(models.Model):
     def __str__(self):
         return f"{self.folio_hospitalizacion} - {self.nombres} {self.apellidos}"
 
+    def save(self, *args, **kwargs):
+        # Set folio_hospitalizacion from treatment_case
+        if self.treatment_case and not self.folio_hospitalizacion:
+            self.folio_hospitalizacion = f"PRE-{self.treatment_case.folio_hospitalizacion}"
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = _("Pre-Surgery Form")
         verbose_name_plural = _("Pre-Surgery Forms")
@@ -386,17 +508,25 @@ class PostDuringSurgeryForm(models.Model):
     """
     Model for recording information during and after surgery.
     """
-    HAN_CHOICES = [(i, str(i)) for i in range(5)]  # 0-4
-    CORMACK_CHOICES = [(i, str(i)) for i in range(1, 5)]  # 1-4
-
-    # Foreign Key to PreSurgeryForm
-    folio_hospitalizacion = models.OneToOneField(
+    
+    # Link to the treatment case and pre-surgery form
+    treatment_case = models.OneToOneField(
+        TreatmentCase,
+        on_delete=models.CASCADE,
+        verbose_name=_("Caso de Tratamiento"),
+        related_name='post_surgery_form'
+    )
+    
+    pre_surgery_form = models.OneToOneField(
         PreSurgeryForm,
         on_delete=models.CASCADE,
-        primary_key=True,
-        verbose_name="Folio Hospitalización",
-        related_name='post_surgery_form'  # Add this if not present
+        verbose_name=_("Formulario Pre-Quirúrgico"),
+        related_name='post_surgery_form'
     )
+    
+    
+    HAN_CHOICES = [(i, str(i)) for i in range(5)]  # 0-4
+    CORMACK_CHOICES = [(i, str(i)) for i in range(1, 5)]  # 1-4
     
     # Location and Personnel
     lugar_problema = models.CharField( #check
@@ -567,6 +697,12 @@ class PostDuringSurgeryForm(models.Model):
 
     def __str__(self):
         return f"Post-Surgery Form - {self.folio_hospitalizacion}"
+    
+    def save(self, *args, **kwargs):
+        # Ensure both forms are linked to the same treatment case
+        if self.pre_surgery_form and not self.treatment_case:
+            self.treatment_case = self.pre_surgery_form.treatment_case
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _("Post-During Surgery Form")
