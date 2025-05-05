@@ -11,6 +11,8 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 import uuid
 from django.urls import reverse
+import re
+
 
 
 class Patient(models.Model):
@@ -112,6 +114,27 @@ class ContactMessage(models.Model):
         return f"{self.subject} - {self.name} ({self.created_at.strftime('%d/%m/%Y')})"
 
 
+# Rule to avoid accents in patient registration fields, to avoid bad character bugs
+def validate_no_accents_or_special_chars(value):
+    """Validates that the name does not contain accents or special characters."""
+    if not re.match(r'^[a-zA-Z\s]+$', value):
+        raise ValidationError(
+            _('El nombre sólo puede contener letras y espacios (sin acentos ni caracteres especiales).'),
+            code='invalid_nombre'
+        )
+    
+
+def validate_integer_only(value):
+    """Validates that the input is an integer."""
+    if not isinstance(value, int):
+        try:
+            int(value)
+        except ValueError:
+            raise ValidationError(
+                _('Solo se permiten números')
+            )     
+
+
 class MedicoUser(AbstractUser):
     """
     Custom user model for medical professionals participating in the ALPHA Project.
@@ -132,6 +155,7 @@ class MedicoUser(AbstractUser):
     email = models.EmailField(
         _('email address'),
         unique=True,
+        validators=[validate_no_accents_or_special_chars],
         error_messages={
             'unique': _("Ya existe un usuario con este correo electrónico."),
         }
@@ -140,12 +164,14 @@ class MedicoUser(AbstractUser):
     nombre = models.CharField(
         _('nombre'),
         max_length=100,
+        validators=[validate_no_accents_or_special_chars],
         help_text=_('Nombres del médico')
     )
     
     apellidos = models.CharField(
         _('apellidos'),
         max_length=100,
+        validators=[validate_no_accents_or_special_chars],
         help_text=_('Apellidos del médico')
     )
     
