@@ -2,14 +2,14 @@
 from django import forms
 from django.core.validators import RegexValidator
 from django.contrib.auth.password_validation import validate_password
-from .models import ContactMessage
-from .models import Patient
+from .models import ContactMessage, Patient, TreatmentCase
 from django.utils.translation import gettext_lazy as _
 from .models import PreSurgeryForm, PostDuringSurgeryForm
 from django.core.exceptions import ValidationError
-from .models import PreSurgeryForm as PreSurgeryModel
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 
 class PatientForm(forms.ModelForm):
@@ -18,13 +18,8 @@ class PatientForm(forms.ModelForm):
     """
     class Meta:
         model = Patient
-        fields = ['folio_hospitalizacion', 'nombres', 'apellidos', 
-                 'fecha_nacimiento', 'codigo_barras']
+        fields = ['nombres', 'apellidos', 'fecha_nacimiento', 'email', 'telefono']
         widgets = {
-            'folio_hospitalizacion': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Folio de Hospitalización'
-            }),
             'nombres': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombres del paciente'
@@ -37,6 +32,46 @@ class PatientForm(forms.ModelForm):
                 'class': 'form-control',
                 'type': 'date'
             }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'correo@ejemplo.com'
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Teléfono (opcional)'
+            })
+        }
+
+    def clean_nombres(self):
+        nombres = self.cleaned_data.get('nombres')
+        if not nombres:
+            raise forms.ValidationError(_("Este campo es requerido."))
+        return nombres.title()
+
+    def clean_apellidos(self):
+        apellidos = self.cleaned_data.get('apellidos')
+        if not apellidos:
+            raise forms.ValidationError(_("Este campo es requerido."))
+        return apellidos.title()
+
+
+class TreatmentCaseForm(forms.ModelForm):
+    """
+    Form for creating treatment cases
+    """
+    class Meta:
+        model = TreatmentCase
+        fields = ['folio_hospitalizacion', 'diagnostico_inicial', 'codigo_barras']
+        widgets = {
+            'folio_hospitalizacion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Folio de Hospitalización'
+            }),
+            'diagnostico_inicial': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Diagnóstico inicial',
+                'rows': 3
+            }),
             'codigo_barras': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': 'image/*'
@@ -47,9 +82,12 @@ class PatientForm(forms.ModelForm):
         folio = self.cleaned_data.get('folio_hospitalizacion')
         if not folio:
             raise forms.ValidationError(_("Este campo es requerido."))
+        
+        # Check for duplicates
+        if TreatmentCase.objects.filter(folio_hospitalizacion=folio).exists():
+            raise forms.ValidationError(_("Ya existe un caso con este folio."))
+        
         return folio.upper()
-
-
 
 
 class ContactForm(forms.ModelForm):
@@ -80,6 +118,7 @@ class ContactForm(forms.ModelForm):
             })
         }
 
+
 class MedicRegistrationForm(forms.Form):
     usuario = forms.CharField(
         max_length=150,
@@ -87,7 +126,7 @@ class MedicRegistrationForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Nombre de usuario',
-            'pattern': '^[a-zA-Z0-9._]+$',  # Only allow letters, numbers, dots and underscores
+            'pattern': '^[a-zA-Z0-9._]+$',
             'title': 'El usuario solo puede contener letras, números, puntos y guiones bajos'
         })
     )
@@ -184,58 +223,27 @@ class MedicRegistrationForm(forms.Form):
             raise forms.ValidationError('Las contraseñas no coinciden')
         
         return cleaned_data
-    
+
 
 class PreSurgeryCreateForm(forms.ModelForm):
+    """
+    Form for creating pre-surgery forms with proper validation
+    """
     required_fields = [
-        'nombres', 'apellidos', 'fecha_nacimiento', 'medico',
-        'fecha_reporte', 'medico_tratante', 'diagnostico_preoperatorio',
+        'medico_tratante', 'diagnostico_preoperatorio',
         'peso', 'talla', 'estado_fisico_asa',
         'evaluacion_preoperatoria', 'fc', 'ta', 'spo2_aire',
         'spo2_oxigeno', 'glasgow', 'mallampati', 'patil_aldrete',
-        'desviacion_traquea'
+        'desviacion_traquea', 'ayuno_hrs', 'distancia_inter_incisiva',
+        'distancia_tiro_mentoniana', 'protrusion_mandibular',
+        'macocha', 'stop_bang'
     ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field_name in self.required_fields:
-            self.fields[field_name].required = True
 
     class Meta:
         model = PreSurgeryForm
-        fields = [
-            'nombres', 'apellidos', 'fecha_nacimiento', 'medico',
-            'fecha_reporte', 'medico_tratante', 'diagnostico_preoperatorio',
-            'peso', 'talla', 'imc', 'estado_fisico_asa',
-            'comorbilidades', 'medicamentos', 'alergias', 'ayuno_hrs',
-            'uso_glp1', 'dosis_glp1', 'tabaquismo',
-            'antecedentes_dificultad', 'descripcion_dificultad',
-            'evaluacion_preoperatoria', 'estudios_radiologicos_va',
-            'uso_usg_gastrico', 'usg_gastrico_ml', 'imagen_usg_gastrico',
-            'fc', 'ta', 'spo2_aire', 'spo2_oxigeno', 'glasgow',
-            'mallampati', 'patil_aldrete', 'distancia_inter_incisiva',
-            'distancia_tiro_mentoniana', 'protrusion_mandibular',
-            'macocha', 'stop_bang', 'desviacion_traquea',
-            'problemas_deglucion', 'estridor_laringeo', 'observaciones'
-        ]
+        exclude = ['treatment_case', 'created_at', 'updated_at']
         widgets = {
-            # Patient Information
-            'nombres': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nombres del paciente'
-            }),
-            'apellidos': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Apellidos del paciente'
-            }),
-            'fecha_nacimiento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'medico': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nombre del médico'
-            }),
+            # Medical Information
             'fecha_reporte': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
@@ -482,83 +490,6 @@ class PreSurgeryCreateForm(forms.ModelForm):
 
         return cleaned_data
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if not instance.fecha_reporte:
-            instance.fecha_reporte = timezone.now().date()
-        if commit:
-            instance.save()
-        return instance
-
-
-class PreSurgeryForm(forms.ModelForm):
-    class Meta:
-        model = PreSurgeryForm
-        exclude = ['folio_hospitalizacion']  # Will be set automatically
-        widgets = {
-            'nombres': forms.TextInput(attrs={'class': 'form-control'}),
-            'apellidos': forms.TextInput(attrs={'class': 'form-control'}),
-            'medico': forms.TextInput(attrs={'class': 'form-control'}),
-            'fecha_nacimiento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'fecha_reporte': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'medico_tratante': forms.TextInput(attrs={'class': 'form-control'}),
-            'diagnostico_preoperatorio': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3
-            }),
-            'peso': forms.NumberInput(attrs={'class': 'form-control'}),
-            'talla': forms.NumberInput(attrs={'class': 'form-control'}),
-            'imc': forms.NumberInput(attrs={'class': 'form-control'}),
-            'estado_fisico_asa': forms.Select(attrs={'class': 'form-control'}),
-            'comorbilidades': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3
-            }),
-            'medicamentos': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3
-            }),
-            'ayuno_hrs': forms.NumberInput(attrs={'class': 'form-control'}),
-            'dosis_glp1': forms.TextInput(attrs={'class': 'form-control'}),
-            'alergias': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 2
-            }),
-            'descripcion_dificultad': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 2
-            }),
-            'evaluacion_preoperatoria': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4
-            }),
-            'usg_gastrico_ml': forms.NumberInput(attrs={'class': 'form-control'}),
-            'fc': forms.NumberInput(attrs={'class': 'form-control'}),
-            'ta': forms.NumberInput(attrs={'class': 'form-control'}),
-            'spo2_aire': forms.NumberInput(attrs={'class': 'form-control'}),
-            'spo2_oxigeno': forms.NumberInput(attrs={'class': 'form-control'}),
-            'glasgow': forms.NumberInput(attrs={'class': 'form-control'}),
-            'mallampati': forms.Select(attrs={'class': 'form-control'}),
-            'patil_aldrete': forms.Select(attrs={'class': 'form-control'}),
-            'distancia_inter_incisiva': forms.NumberInput(attrs={'class': 'form-control'}),
-            'distancia_tiro_mentoniana': forms.NumberInput(attrs={'class': 'form-control'}),
-            'protrusion_mandibular': forms.Select(attrs={'class': 'form-control'}),
-            'macocha': forms.NumberInput(attrs={'class': 'form-control'}),
-            'stop_bang': forms.NumberInput(attrs={'class': 'form-control'}),
-            'desviacion_traquea': forms.NumberInput(attrs={'class': 'form-control'}),
-            'observaciones': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3
-            }),
-        }
-
-
 
 class PostSurgeryCreateForm(forms.ModelForm):
     """
@@ -569,129 +500,13 @@ class PostSurgeryCreateForm(forms.ModelForm):
         'aditamento_via_aerea', 'tiempo_preoxigenacion', 'tipo_intubacion',
         'numero_intentos', 'cormack', 'pogo', 'tipo_anestesia',
         'resultado_final', 'nombre_anestesiologo', 'cedula_profesional',
-        'especialidad'
+        'especialidad', 'laringoscopia_directa', 'sedacion',
+        'cooperacion_paciente'
     ]
 
     class Meta:
         model = PostDuringSurgeryForm
-        exclude = ['folio_hospitalizacion']
-        widgets = {
-            # Keep all the existing widgets from PostSurgeryForm
-            # ... (keep existing widget definitions)
-        }
-        help_texts = {
-            # Location and Personnel
-            'lugar_problema': _('Especifique el lugar donde se realizó el procedimiento (ej: Quirófano, Urgencias)'),
-            'presencia_anestesiologo': _('Indique si un anestesiólogo estuvo presente durante el procedimiento'),
-            
-            # Equipment and Techniques
-            'tecnica_utilizada': _('Detalle la técnica principal utilizada para el manejo de la vía aérea'),
-            'carro_via_aerea': _('¿Se contó con carro de vía aérea difícil?'),
-            'tipo_video_laringoscopia': _('Especifique el modelo de videolaringoscopio utilizado'),
-            
-            # Classifications
-            'clasificacion_han': _('Seleccione el grado en la escala HAN (0-4) de dificultad encontrada'),
-            'aditamento_via_aerea': _('Indique los dispositivos auxiliares utilizados durante el procedimiento'),
-            'tiempo_preoxigenacion': _('Tiempo total en minutos de pre-oxigenación'),
-            
-            # Supraglottic Device
-            'uso_supraglotico': _('¿Se utilizó algún dispositivo supraglótico?'),
-            'tipo_supraglotico': _('Indique tipo y tamaño del dispositivo supraglótico utilizado'),
-            'problemas_supragloticos': _('Describa cualquier dificultad o complicación con el dispositivo'),
-            
-            # Intubation Details
-            'tipo_intubacion': _('Especifique la vía y técnica de intubación empleada'),
-            'numero_intentos': _('Número total de intentos de intubación realizados'),
-            'laringoscopia_directa': _('Describa los hallazgos durante la laringoscopía directa'),
-            'cormack': _('Indique el grado de visualización según Cormack-Lehane (1-4)'),
-            'pogo': _('Porcentaje de visualización de la glotis (0-100%)'),
-            
-            # Additional Procedures
-            'intubacion_tecnica_mixta': _('Si utilizó una combinación de técnicas, especifique cuáles'),
-            'intubacion_despierto': _('¿Se realizó intubación con el paciente despierto?'),
-            'descripcion_intubacion_despierto': _('Detalle el procedimiento de intubación en paciente despierto'),
-            
-            # Anesthesia Details
-            'tipo_anestesia': _('Especifique el tipo de anestesia administrada'),
-            'sedacion': _('Detalle medicamentos y dosis utilizados para sedación'),
-            'observaciones': _('Incluya cualquier observación relevante adicional'),
-            'cooperacion_paciente': _('Describa el nivel de cooperación del paciente'),
-            
-            # Emergency Procedures
-            'algoritmo_no_intubacion': _('¿Se activó el algoritmo de no intubación?'),
-            'crico_tiroidotomia': _('¿Fue necesario realizar cricotiroidotomía?'),
-            'traqueostomia_percutanea': _('¿Se realizó traqueostomía percutánea?'),
-            
-            # Results
-            'complicaciones': _('Describa todas las complicaciones presentadas durante el procedimiento'),
-            'resultado_final': _('Resuma el resultado final del procedimiento'),
-            
-            # Morbidity and Mortality
-            'morbilidad': _('¿Hubo morbilidad asociada al procedimiento?'),
-            'descripcion_morbilidad': _('Detalle la morbilidad presentada y su manejo'),
-            'mortalidad': _('¿Hubo mortalidad asociada al procedimiento?'),
-            'descripcion_mortalidad': _('Describa las circunstancias y causa de la mortalidad'),
-            
-            # Personnel
-            'nombre_anestesiologo': _('Nombre completo del anestesiólogo responsable'),
-            'cedula_profesional': _('Número de cédula profesional del anestesiólogo'),
-            'especialidad': _('Especialidad del médico tratante'),
-            'nombre_residente': _('Si participó un residente, incluya su nombre'),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Mark required fields
-        for field_name in self.required_fields:
-            if field_name in self.fields:
-                self.fields[field_name].required = True
-
-    def clean(self):
-        cleaned_data = super().clean()
-        
-        # Validation for POGO score
-        pogo = cleaned_data.get('pogo')
-        if pogo is not None and (pogo < 0 or pogo > 100):
-            raise ValidationError({'pogo': _('El valor POGO debe estar entre 0 y 100')})
-        
-        # Validation for number of attempts
-        intentos = cleaned_data.get('numero_intentos')
-        if intentos is not None and intentos < 1:
-            raise ValidationError({'numero_intentos': _('Debe haber al menos un intento')})
-        
-        # Required descriptions for certain conditions
-        if cleaned_data.get('intubacion_despierto') and not cleaned_data.get('descripcion_intubacion_despierto'):
-            raise ValidationError({
-                'descripcion_intubacion_despierto': _('La descripción es requerida cuando se realiza intubación en paciente despierto')
-            })
-            
-        if cleaned_data.get('morbilidad') and not cleaned_data.get('descripcion_morbilidad'):
-            raise ValidationError({
-                'descripcion_morbilidad': _('La descripción es requerida cuando se indica morbilidad')
-            })
-            
-        if cleaned_data.get('mortalidad') and not cleaned_data.get('descripcion_mortalidad'):
-            raise ValidationError({
-                'descripcion_mortalidad': _('La descripción es requerida cuando se indica mortalidad')
-            })
-            
-        return cleaned_data
-    
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if commit:
-            instance.save()
-        return instance
-
-
-
-class PostSurgeryForm(forms.ModelForm):
-    """
-    Form for creating and updating post-surgery records
-    """
-    class Meta:
-        model = PostDuringSurgeryForm
-        exclude = ['folio_hospitalizacion']
+        exclude = ['treatment_case', 'pre_surgery_form', 'created_at', 'updated_at']
         widgets = {
             # Location and Personnel
             'lugar_problema': forms.TextInput(attrs={
@@ -868,6 +683,72 @@ class PostSurgeryForm(forms.ModelForm):
                 'placeholder': 'Nombre del residente'
             }),
         }
+        help_texts = {
+            # Location and Personnel
+            'lugar_problema': _('Especifique el lugar donde se realizó el procedimiento (ej: Quirófano, Urgencias)'),
+            'presencia_anestesiologo': _('Indique si un anestesiólogo estuvo presente durante el procedimiento'),
+            
+            # Equipment and Techniques
+            'tecnica_utilizada': _('Detalle la técnica principal utilizada para el manejo de la vía aérea'),
+            'carro_via_aerea': _('¿Se contó con carro de vía aérea difícil?'),
+            'tipo_video_laringoscopia': _('Especifique el modelo de videolaringoscopio utilizado'),
+            
+            # Classifications
+            'clasificacion_han': _('Seleccione el grado en la escala HAN (0-4) de dificultad encontrada'),
+            'aditamento_via_aerea': _('Indique los dispositivos auxiliares utilizados durante el procedimiento'),
+            'tiempo_preoxigenacion': _('Tiempo total en minutos de pre-oxigenación'),
+            
+            # Supraglottic Device
+            'uso_supraglotico': _('¿Se utilizó algún dispositivo supraglótico?'),
+            'tipo_supraglotico': _('Indique tipo y tamaño del dispositivo supraglótico utilizado'),
+            'problemas_supragloticos': _('Describa cualquier dificultad o complicación con el dispositivo'),
+            
+            # Intubation Details
+            'tipo_intubacion': _('Especifique la vía y técnica de intubación empleada'),
+            'numero_intentos': _('Número total de intentos de intubación realizados'),
+            'laringoscopia_directa': _('Describa los hallazgos durante la laringoscopía directa'),
+            'cormack': _('Indique el grado de visualización según Cormack-Lehane (1-4)'),
+            'pogo': _('Porcentaje de visualización de la glotis (0-100%)'),
+            
+            # Additional Procedures
+            'intubacion_tecnica_mixta': _('Si utilizó una combinación de técnicas, especifique cuáles'),
+            'intubacion_despierto': _('¿Se realizó intubación con el paciente despierto?'),
+            'descripcion_intubacion_despierto': _('Detalle el procedimiento de intubación en paciente despierto'),
+            
+            # Anesthesia Details
+            'tipo_anestesia': _('Especifique el tipo de anestesia administrada'),
+            'sedacion': _('Detalle medicamentos y dosis utilizados para sedación'),
+            'observaciones': _('Incluya cualquier observación relevante adicional'),
+            'cooperacion_paciente': _('Describa el nivel de cooperación del paciente'),
+            
+            # Emergency Procedures
+            'algoritmo_no_intubacion': _('¿Se activó el algoritmo de no intubación?'),
+            'crico_tiroidotomia': _('¿Fue necesario realizar cricotiroidotomía?'),
+            'traqueostomia_percutanea': _('¿Se realizó traqueostomía percutánea?'),
+            
+            # Results
+            'complicaciones': _('Describa todas las complicaciones presentadas durante el procedimiento'),
+            'resultado_final': _('Resuma el resultado final del procedimiento'),
+            
+            # Morbidity and Mortality
+            'morbilidad': _('¿Hubo morbilidad asociada al procedimiento?'),
+            'descripcion_morbilidad': _('Detalle la morbilidad presentada y su manejo'),
+            'mortalidad': _('¿Hubo mortalidad asociada al procedimiento?'),
+            'descripcion_mortalidad': _('Describa las circunstancias y causa de la mortalidad'),
+            
+            # Personnel
+            'nombre_anestesiologo': _('Nombre completo del anestesiólogo responsable'),
+            'cedula_profesional': _('Número de cédula profesional del anestesiólogo'),
+            'especialidad': _('Especialidad del médico tratante'),
+            'nombre_residente': _('Si participó un residente, incluya su nombre'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Mark required fields
+        for field_name in self.required_fields:
+            if field_name in self.fields:
+                self.fields[field_name].required = True
 
     def clean(self):
         cleaned_data = super().clean()
@@ -875,41 +756,120 @@ class PostSurgeryForm(forms.ModelForm):
         # Validation for POGO score
         pogo = cleaned_data.get('pogo')
         if pogo is not None and (pogo < 0 or pogo > 100):
-            raise ValidationError({'pogo': 'El valor POGO debe estar entre 0 y 100'})
+            raise ValidationError({'pogo': _('El valor POGO debe estar entre 0 y 100')})
         
         # Validation for number of attempts
         intentos = cleaned_data.get('numero_intentos')
         if intentos is not None and intentos < 1:
-            raise ValidationError({'numero_intentos': 'Debe haber al menos un intento'})
+            raise ValidationError({'numero_intentos': _('Debe haber al menos un intento')})
         
         # Required descriptions for certain conditions
         if cleaned_data.get('intubacion_despierto') and not cleaned_data.get('descripcion_intubacion_despierto'):
             raise ValidationError({
-                'descripcion_intubacion_despierto': 'La descripción es requerida cuando se realiza intubación en paciente despierto'
+                'descripcion_intubacion_despierto': _('La descripción es requerida cuando se realiza intubación en paciente despierto')
             })
             
         if cleaned_data.get('morbilidad') and not cleaned_data.get('descripcion_morbilidad'):
             raise ValidationError({
-                'descripcion_morbilidad': 'La descripción es requerida cuando se indica morbilidad'
+                'descripcion_morbilidad': _('La descripción es requerida cuando se indica morbilidad')
             })
             
         if cleaned_data.get('mortalidad') and not cleaned_data.get('descripcion_mortalidad'):
             raise ValidationError({
-                'descripcion_mortalidad': 'La descripción es requerida cuando se indica mortalidad'
+                'descripcion_mortalidad': _('La descripción es requerida cuando se indica mortalidad')
             })
             
         return cleaned_data
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Mark required fields
-        required_fields = [
-            'lugar_problema', 'tecnica_utilizada', 'clasificacion_han',
-            'aditamento_via_aerea', 'tiempo_preoxigenacion', 'tipo_intubacion',
-            'numero_intentos', 'cormack', 'pogo', 'tipo_anestesia',
-            'resultado_final', 'nombre_anestesiologo', 'cedula_profesional',
-            'especialidad'
-        ]
-        for field_name in required_fields:
-            if field_name in self.fields:
-                self.fields[field_name].required = True
+
+# ===== ALERT SYSTEM FORMS =====
+
+from .models import RiskAlert, AlertRule, RiskFactor
+
+class AlertAcknowledgeForm(forms.Form):
+    """
+    Form for acknowledging alerts
+    """
+    notes = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Notas sobre la alerta (opcional)'
+        }),
+        required=False
+    )
+
+
+class AlertRuleForm(forms.ModelForm):
+    """
+    Form for creating and editing alert rules
+    """
+    class Meta:
+        model = AlertRule
+        fields = ['name', 'description', 'rule_type', 'rule_config', 'risk_factors', 'priority', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre de la regla'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción de la regla'
+            }),
+            'rule_type': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'rule_config': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Configuración JSON de la regla'
+            }),
+            'risk_factors': forms.CheckboxSelectMultiple(),
+            'priority': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '5'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            })
+        }
+
+    def clean_rule_config(self):
+        import json
+        rule_config = self.cleaned_data.get('rule_config')
+        try:
+            json.loads(rule_config)
+        except json.JSONDecodeError:
+            raise ValidationError(_('La configuración debe ser un JSON válido'))
+        return rule_config
+
+
+class RiskFactorForm(forms.ModelForm):
+    """
+    Form for creating and editing risk factors
+    """
+    class Meta:
+        model = RiskFactor
+        fields = ['name', 'category', 'description', 'severity_level', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre del factor de riesgo'
+            }),
+            'category': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción del factor de riesgo'
+            }),
+            'severity_level': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            })
+        }

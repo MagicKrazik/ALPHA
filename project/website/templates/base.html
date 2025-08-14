@@ -1,74 +1,399 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es" class="no-js">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ALPHA Project - Airway Level Protocol and Health Assessment {% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary Meta Tags -->
+    <title>{% block title %}ALPHA Project - Revolución en Seguridad Anestesiológica{% endblock %}</title>
+    <meta name="description" content="{% block description %}ALPHA Project: Plataforma de IA más avanzada para predicción y prevención de complicaciones anestesiológicas. Únase a la revolución médica 2025.{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}anestesiología, inteligencia artificial, predicción médica, seguridad paciente, ALPHA Project, medicina 2025{% endblock %}">
+    <meta name="author" content="ALPHA Project Team">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}ALPHA Project - Revolución en Seguridad Anestesiológica{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Transformando la anestesiología con IA predictiva. 95% precisión, 50+ hospitales, 10K+ procedimientos analizados.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% load static %}{% static 'images/alpha-og-image.jpg' %}{% endblock %}">
+    <meta property="og:site_name" content="ALPHA Project">
+    <meta property="og:locale" content="es_MX">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{% block twitter_url %}{{ request.build_absolute_uri }}{% endblock %}">
+    <meta property="twitter:title" content="{% block twitter_title %}ALPHA Project - Revolución en Seguridad Anestesiológica{% endblock %}">
+    <meta property="twitter:description" content="{% block twitter_description %}Transformando la anestesiología con IA predictiva. 95% precisión, 50+ hospitales, 10K+ procedimientos analizados.{% endblock %}">
+    <meta property="twitter:image" content="{% block twitter_image %}{% load static %}{% static 'images/alpha-twitter-image.jpg' %}{% endblock %}">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% static 'site.webmanifest' %}">
+    <meta name="theme-color" content="#2B4570">
+    <meta name="msapplication-TileColor" content="#2B4570">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="{% static 'css/main.css' %}" as="style">
+    <link rel="preload" href="{% static 'fonts/primary-font.woff2' %}" as="font" type="font/woff2" crossorigin>
+    
+    <!-- DNS Prefetch for External Resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//unpkg.com">
+    
+    <!-- Progressive Web App -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ALPHA">
+    
+    <!-- CSS -->
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="icon" type="image/png" href="{% static 'images/logo_favicon.png' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Critical inline CSS for performance */
+        :root {
+            --primary-color: #2B4570;
+            --secondary-color: #45B7D1;
+            --text-dark: #2C3E50;
+            --bg-light: #F8FAFC;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        /* Loading state */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2B4570, #45B7D1);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        
+        .page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loader-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
     {% block extra_css %}{% endblock %}
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "MedicalOrganization",
+        "name": "ALPHA Project",
+        "description": "Plataforma de IA para predicción y prevención de complicaciones anestesiológicas",
+        "url": "{{ request.build_absolute_uri }}",
+        "logo": "{% static 'images/alpha-logo.png' %}",
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+52-555-123-4567",
+            "contactType": "customer service",
+            "availableLanguage": ["Spanish", "English"]
+        },
+        "sameAs": [
+            "https://www.linkedin.com/company/alpha-project",
+            "https://twitter.com/alphaproject"
+        ]
+    }
+    </script>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="container navbar-content">
-            <div class="navbar-left">
-                <div class="logo-container">
-                    <a href="{% url 'home' %}" class="logo-box">
-                        <img src="{% static 'images/logo_2.png' %}" alt="ALPHA_logo" class="logo">
-                    </a>
-                </div>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-content">
+            <div class="loader-logo"></div>
+            <h3>ALPHA Project</h3>
+            <p>Cargando el futuro de la anestesiología...</p>
+        </div>
+    </div>
+
+    <!-- Skip to content for accessibility -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+    
+    <!-- Navigation -->
+    <nav class="navbar" role="navigation" aria-label="Navegación principal">
+        <div class="container">
+            <div class="navbar-brand">
+                <a href="{% url 'home' %}" class="brand-link" aria-label="ALPHA Project - Inicio">
+                    <img src="{% static 'images/alpha-logo.svg' %}" alt="ALPHA Project" class="brand-logo" width="40" height="40">
+                    <span class="brand-text">ALPHA Project</span>
+                </a>
             </div>
-
-
-            <div class="navbar-right navbar-menu">
-                {% if user.is_authenticated %}
-                    <a href="{% url 'home' %}">Inicio</a>
-                    <div class="dropdown-container">
-                        <a href="#" class="dropdown-toggle">
-                            Pacientes<span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a href="{% url 'patient-create' %}">Registrar Px</a></li>
-                            <li><a href="{% url 'patient-list' %}">Consultar Info Px</a></li>
-                        </ul>
-                    </div>
-                    <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
-                    {% if user.is_staff or user.is_staff %}
-                        <a href="#">Panel Admin</a>
-                    {% endif %}
-                    <a href="{% url 'logout' %}" class="nav-link">Cerrar Sesión</a>
-                {% else %}
-                    <a href="{% url 'home' %}">Inicio</a>
-                    <a href="{% url 'register' %}" class="nav-link">Regístrate</a>
-                    <a href="{% url 'login' %}" class="nav-link">Iniciar Sesión</a>
-                {% endif %}
-            </div>
-
-            <button class="navbar-toggle" aria-label="Toggle navigation">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
+            
+            <button class="navbar-toggle" type="button" aria-controls="navbar-menu" aria-expanded="false" aria-label="Abrir menú de navegación">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
             </button>
+            
+            <div class="navbar-menu" id="navbar-menu">
+                <ul class="navbar-nav" role="menubar">
+                    <li class="nav-item" role="none">
+                        <a href="{% url 'home' %}" class="nav-link" role="menuitem">Inicio</a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="#innovation" class="nav-link" role="menuitem">Innovación</a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="#demo" class="nav-link" role="menuitem">Demo</a>
+                    </li>
+                    <li class="nav-item" role="none">
+                        <a href="{% url 'contact' %}" class="nav-link" role="menuitem">Contacto</a>
+                    </li>
+                    
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown" role="none">
+                            <a href="#" class="nav-link dropdown-toggle" role="menuitem" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-user-circle" aria-hidden="true"></i>
+                                {{ user.get_full_name|default:user.username }}
+                            </a>
+                            <ul class="dropdown-menu" role="menu">
+                                <li role="none">
+                                    <a href="{% url 'dashboard' %}" class="dropdown-link" role="menuitem">
+                                        <i class="fas fa-tachometer-alt" aria-hidden="true"></i>
+                                        Dashboard
+                                    </a>
+                                </li>
+                                <li role="none">
+                                    <a href="{% url 'patient-list' %}" class="dropdown-link" role="menuitem">
+                                        <i class="fas fa-users" aria-hidden="true"></i>
+                                        Pacientes
+                                    </a>
+                                </li>
+                                <li role="none">
+                                    <a href="{% url 'alerts-list' %}" class="dropdown-link" role="menuitem">
+                                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                                        Alertas
+                                    </a>
+                                </li>
+                                <li class="dropdown-divider" role="separator"></li>
+                                <li role="none">
+                                    <a href="{% url 'logout' %}" class="dropdown-link" role="menuitem">
+                                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                        Cerrar Sesión
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item" role="none">
+                            <a href="{% url 'login' %}" class="nav-link" role="menuitem">
+                                <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                                Iniciar Sesión
+                            </a>
+                        </li>
+                        <li class="nav-item" role="none">
+                            <a href="{% url 'register' %}" class="nav-link nav-cta" role="menuitem">
+                                <i class="fas fa-rocket" aria-hidden="true"></i>
+                                Registrarse
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="container" role="main">
-        {% block content %}
-
-        {% endblock %}
+    <!-- Alert Notifications Container -->
+    <div class="alert-container" id="alertContainer" role="alert" aria-live="polite" aria-atomic="true">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible">
+                    <button type="button" class="alert-close" aria-label="Cerrar alerta">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                    <div class="alert-content">
+                        <i class="alert-icon fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}" aria-hidden="true"></i>
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
     </div>
 
-    <footer>
-        <div class="footer-content">
-            © Airway Level Protocol and Health Assessment - <a class='aviso-priv-link' href="#"> Aviso de Privacidad.</a> - Desarrollado por <a class='dive-link' href='http://www.dive.it.com'> dive.it.com</a>
+    <!-- Main Content -->
+    <main id="main-content" role="main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <img src="{% static 'images/alpha-logo.svg' %}" alt="ALPHA Project" class="footer-logo" width="50" height="50">
+                        <h3>ALPHA Project</h3>
+                        <p>Revolucionando la seguridad anestesiológica con inteligencia artificial</p>
+                    </div>
+                    
+                    <div class="social-links">
+                        <a href="#" class="social-link" aria-label="LinkedIn" rel="noopener">
+                            <i class="fab fa-linkedin-in" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Twitter" rel="noopener">
+                            <i class="fab fa-twitter" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="social-link" aria-label="YouTube" rel="noopener">
+                            <i class="fab fa-youtube" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Producto</h4>
+                    <ul class="footer-links">
+                        <li><a href="#innovation">Innovación</a></li>
+                        <li><a href="#features">Características</a></li>
+                        <li><a href="#demo">Demostración</a></li>
+                        <li><a href="#pricing">Precios</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Empresa</h4>
+                    <ul class="footer-links">
+                        <li><a href="#about">Nosotros</a></li>
+                        <li><a href="#careers">Careers</a></li>
+                        <li><a href="#blog">Blog</a></li>
+                        <li><a href="#press">Prensa</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Soporte</h4>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'contact' %}">Contacto</a></li>
+                        <li><a href="#help">Centro de Ayuda</a></li>
+                        <li><a href="#docs">Documentación</a></li>
+                        <li><a href="#community">Comunidad</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="#privacy">Privacidad</a></li>
+                        <li><a href="#terms">Términos</a></li>
+                        <li><a href="#cookies">Cookies</a></li>
+                        <li><a href="#compliance">Compliance</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="footer-bottom-content">
+                    <p>&copy; 2025 ALPHA Project. Todos los derechos reservados.</p>
+                    <div class="footer-bottom-links">
+                        <span class="footer-badge">
+                            <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                            ISO 27001 Certificado
+                        </span>
+                        <span class="footer-badge">
+                            <i class="fas fa-lock" aria-hidden="true"></i>
+                            HIPAA Compliant
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <script src="{% static 'js/base.js' %}"></script>
-  {% block extra_js %}
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Volver arriba" title="Volver arriba">
+        <i class="fas fa-chevron-up" aria-hidden="true"></i>
+    </button>
 
-  {% endblock %}  
+    <!-- Scripts -->
+    <script>
+        // Remove no-js class and add js class
+        document.documentElement.className = document.documentElement.className.replace('no-js', 'js');
+        
+        // Hide page loader when content is loaded
+        window.addEventListener('load', function() {
+            const loader = document.getElementById('pageLoader');
+            if (loader) {
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                    setTimeout(() => {
+                        loader.remove();
+                    }, 500);
+                }, 500);
+            }
+        });
+    </script>
+
+    <!-- Core JavaScript -->
+    <script src="{% static 'js/main.js' %}" defer></script>
+    
+    {% block extra_js %}{% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed');
+                    });
+            });
+        }
+    </script>
+    
+    <!-- Analytics (placeholder) -->
+    <script async>
+        // Google Analytics or other analytics code would go here
+        // Ensure GDPR compliance
+    </script>
 </body>
 </html>

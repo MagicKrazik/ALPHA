@@ -17,12 +17,11 @@ from django.utils.crypto import get_random_string
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0*d9%)=-$n&$p()%_1ea6q9+#$u0_4-0xve&a8j!s)3gl9cxax'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-0*d9%)=-$n&$p()%_1ea6q9+#$u0_4-0xve&a8j!s)3gl9cxax')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -143,12 +142,12 @@ LOGOUT_REDIRECT_URL = 'home'
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Or your email provider's SMTP server
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'carlos.horacio.olivares@gmail.com'  # Your email address
-EMAIL_HOST_PASSWORD = 'yscm vwgx mste oojg'  # Your email password or app-specific password
-DEFAULT_FROM_EMAIL = 'carlos.horacio.olivares@gmail.com'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'carlos.horacio.olivares@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Carlos Olivares <carlos.horacio.olivares@gmail.com>')
 CONTACT_EMAIL = 'carlos.horacio.olivares@gmail.com'  # Email where contact form submissions will be sent
 
 
@@ -170,3 +169,4 @@ LOGGING = {
         },
     },
 }
+

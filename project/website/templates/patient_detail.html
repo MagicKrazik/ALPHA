@@ -1,30 +1,393 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Detalle de pacientes - ALPHA Project{% endblock %}
+{% block title %}{{ treatment_case.folio_hospitalizacion }} - ALPHA Project{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/patient_detail.css' %}">
-{% endblock %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+/* Additional CSS for new features */
+.alerts-summary {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
 
+.alert-count {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.alerts-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.alert-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alert-item.alert-critical {
+    border-left: 4px solid #ff3838;
+}
+
+.alert-item.alert-warning {
+    border-left: 4px solid #ffa502;
+}
+
+.alert-item.alert-preventive {
+    border-left: 4px solid #3742fa;
+}
+
+.view-all-alerts {
+    color: white;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    display: inline-block;
+}
+
+.risk-profile-card {
+    border-left: 4px solid var(--secondary-color);
+    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+}
+
+.risk-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.risk-metric {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.metric-value.risk-low { color: #27ae60; }
+.metric-value.risk-medium { color: #f39c12; }
+.metric-value.risk-high { color: #e74c3c; }
+.metric-value.risk-critical { color: #c0392b; }
+
+.metric-level {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-factors {
+    margin: 1rem 0;
+}
+
+.risk-factors h4 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.risk-factors-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.risk-factor-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: white;
+}
+
+.risk-factor-badge.severity-low { background: #27ae60; }
+.risk-factor-badge.severity-medium { background: #f39c12; }
+.risk-factor-badge.severity-high { background: #e74c3c; }
+.risk-factor-badge.severity-critical { background: #8e44ad; }
+
+.risk-probabilities {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.probability-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(43, 69, 112, 0.05);
+    border-radius: 6px;
+}
+
+.probability-value {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.risk-metadata {
+    text-align: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.form-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(43, 69, 112, 0.03);
+    border-radius: 6px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.summary-item label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.summary-item span {
+    font-weight: 600;
+}
+
+.summary-item.warning span {
+    color: #f39c12;
+}
+
+.summary-item.error span {
+    color: #e74c3c;
+}
+
+.summary-item.critical span {
+    color: #c0392b;
+}
+
+.asa-badge, .mallampati-badge, .han-badge, .cormack-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.asa-1, .asa-2 { background: #27ae60; }
+.asa-3 { background: #f39c12; }
+.asa-4, .asa-5, .asa-6 { background: #e74c3c; }
+
+.mallampati-1, .mallampati-2 { background: #27ae60; }
+.mallampati-3 { background: #f39c12; }
+.mallampati-4 { background: #e74c3c; }
+
+.han-0, .han-1 { background: #27ae60; }
+.han-2 { background: #f39c12; }
+.han-3, .han-4 { background: #e74c3c; }
+
+.cormack-1, .cormack-2 { background: #27ae60; }
+.cormack-3 { background: #f39c12; }
+.cormack-4 { background: #e74c3c; }
+
+.team-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.team-member {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(43, 69, 112, 0.05);
+    border-radius: 6px;
+}
+
+.team-member.primary {
+    background: rgba(43, 69, 112, 0.1);
+    border-left: 4px solid var(--primary-color);
+}
+
+.team-member i {
+    color: var(--primary-color);
+    width: 20px;
+}
+
+.member-name {
+    font-weight: 600;
+    flex: 1;
+}
+
+.member-role {
+    font-size: 0.85rem;
+    color: #666;
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+.status-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.no-forms-message {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #666;
+    background: rgba(43, 69, 112, 0.03);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.no-forms-message.warning {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.no-forms-message i {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .risk-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .risk-probabilities {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .alerts-preview {
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    
+    .team-member {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .risk-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .risk-factors-list {
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="section detail-section">
     <div class="container">
-        <div class="detail-container aos-init aos-animate" data-aos="fade-up">
-            <!-- Patient Header -->
+        <div class="detail-container" data-aos="fade-up">
+            <!-- Header -->
             <div class="detail-header">
-                <h1>{{ patient.nombres }} {{ patient.apellidos }}</h1>
+                <h1>{{ patient.nombre_completo }}</h1>
                 <div class="detail-meta">
-                    <span class="folio">Folio: {{ patient.folio_hospitalizacion }}</span>
-                    <span class="fecha">Registro: {{ patient.fecha_registro|date:"d/m/Y" }}</span>
+                    <span class="folio">Folio: {{ treatment_case.folio_hospitalizacion }}</span>
+                    <span class="fecha">Ingreso: {{ treatment_case.fecha_ingreso|date:"d/m/Y" }}</span>
+                    <span class="edad">Edad: {{ patient.edad }} años</span>
                 </div>
+                
+                <!-- Active Alerts -->
+                {% if alerts %}
+                <div class="alerts-summary">
+                    <div class="alert-count">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ alerts.count }} Alerta{{ alerts.count|pluralize:"s" }} Activa{{ alerts.count|pluralize:"s" }}
+                    </div>
+                    <div class="alerts-preview">
+                        {% for alert in alerts|slice:":3" %}
+                        <div class="alert-item alert-{{ alert.alert_type }}">
+                            <div>
+                                <strong>{{ alert.title }}</strong>
+                                <br><small>{{ alert.triggered_at|date:"d/m H:i" }}</small>
+                            </div>
+                            <a href="{% url 'alert-detail' alert.id %}" class="btn btn-sm btn-light">Ver</a>
+                        </div>
+                        {% endfor %}
+                        {% if alerts.count > 3 %}
+                        <a href="{% url 'alerts-list' %}?case={{ treatment_case.id_case }}" class="view-all-alerts">
+                            Ver todas las alertas →
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <div class="detail-content">
-                <!-- Personal Information Card -->
-                <div class="info-card aos-init aos-animate" data-aos="fade-up">
-                    <h3>Información Personal</h3>
+                <!-- Patient Information Card -->
+                <div class="info-card" data-aos="fade-up">
+                    <h3><i class="fas fa-user"></i> Información del Paciente</h3>
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Nombres:</label>
@@ -39,92 +402,305 @@
                             <span>{{ patient.fecha_nacimiento|date:"d/m/Y" }}</span>
                         </div>
                         <div class="info-item">
-                            <label>Médico Tratante:</label>
-                            <span>{{ patient.medico.get_full_name }}</span>
+                            <label>Edad:</label>
+                            <span>{{ patient.edad }} años</span>
                         </div>
+                        {% if patient.email %}
+                        <div class="info-item">
+                            <label>Email:</label>
+                            <span>{{ patient.email }}</span>
+                        </div>
+                        {% endif %}
+                        {% if patient.telefono %}
+                        <div class="info-item">
+                            <label>Teléfono:</label>
+                            <span>{{ patient.telefono }}</span>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
+
+                <!-- Treatment Case Information -->
+                <div class="info-card" data-aos="fade-up">
+                    <h3><i class="fas fa-hospital"></i> Información del Caso</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Folio de Hospitalización:</label>
+                            <span>{{ treatment_case.folio_hospitalizacion }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Médico Responsable:</label>
+                            <span>{{ treatment_case.medico_responsable.get_full_name }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Fecha de Ingreso:</label>
+                            <span>{{ treatment_case.fecha_ingreso|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% if treatment_case.fecha_alta %}
+                        <div class="info-item">
+                            <label>Fecha de Alta:</label>
+                            <span>{{ treatment_case.fecha_alta|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                        {% if treatment_case.diagnostico_inicial %}
+                        <div class="info-item full-width">
+                            <label>Diagnóstico Inicial:</label>
+                            <span>{{ treatment_case.diagnostico_inicial }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Risk Profile Section -->
+                {% if treatment_case.risk_profile %}
+                <div class="info-card risk-profile-card" data-aos="fade-up">
+                    <h3><i class="fas fa-chart-line"></i> Perfil de Riesgo</h3>
+                    <div class="risk-metrics">
+                        <div class="risk-metric">
+                            <div class="metric-label">Riesgo General</div>
+                            <div class="metric-value risk-{{ treatment_case.risk_profile.risk_level }}">
+                                {{ treatment_case.risk_profile.overall_risk_score|floatformat:0 }}%
+                            </div>
+                            <div class="metric-level">{{ treatment_case.risk_profile.risk_level|upper }}</div>
+                        </div>
+                        <div class="risk-metric">
+                            <div class="metric-label">Vía Aérea</div>
+                            <div class="metric-value">
+                                {{ treatment_case.risk_profile.airway_risk_score|floatformat:0 }}%
+                            </div>
+                        </div>
+                        <div class="risk-metric">
+                            <div class="metric-label">Cardiovascular</div>
+                            <div class="metric-value">
+                                {{ treatment_case.risk_profile.cardiovascular_risk_score|floatformat:0 }}%
+                            </div>
+                        </div>
+                        <div class="risk-metric">
+                            <div class="metric-label">Respiratorio</div>
+                            <div class="metric-value">
+                                {{ treatment_case.risk_profile.respiratory_risk_score|floatformat:0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if treatment_case.risk_profile.identified_risk_factors.exists %}
+                    <div class="risk-factors">
+                        <h4>Factores de Riesgo Identificados:</h4>
+                        <div class="risk-factors-list">
+                            {% for factor in treatment_case.risk_profile.identified_risk_factors.all %}
+                            <span class="risk-factor-badge severity-{{ factor.severity_level }}">
+                                {{ factor.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="risk-probabilities">
+                        {% if treatment_case.risk_profile.difficult_airway_probability %}
+                        <div class="probability-item">
+                            <label>Probabilidad Vía Aérea Difícil:</label>
+                            <span class="probability-value">
+                                {{ treatment_case.risk_profile.difficult_airway_probability|floatformat:0 }}%
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if treatment_case.risk_profile.complication_probability %}
+                        <div class="probability-item">
+                            <label>Probabilidad de Complicaciones:</label>
+                            <span class="probability-value">
+                                {{ treatment_case.risk_profile.complication_probability|floatformat:0 }}%
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="risk-metadata">
+                        <small>
+                            Última actualización: {{ treatment_case.risk_profile.last_calculated|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Forms Section -->
                 <div class="forms-section">
                     <!-- Pre-Surgery Forms -->
-                    <div class="forms-card aos-init aos-animate" data-aos="fade-up">
-                        <h3>Formularios Pre-Cirugía</h3>
+                    <div class="forms-card" data-aos="fade-up">
+                        <h3><i class="fas fa-file-medical"></i> Formulario Pre-Cirugía</h3>
                         
-                        {% if presurgery_forms %}
-                            <div class="forms-grid">
-                                {% for form in presurgery_forms %}
-                                    <div class="form-item">
-                                        <div class="form-status">
-                                            <span class="status-badge complete">
-                                                <i class="fas fa-check-circle"></i> Completado
-                                            </span>
-                                            <span class="form-date">{{ form.fecha_reporte|date:"d/m/Y" }}</span>
-                                            <a href="{% url 'presurgery-detail' form.folio_hospitalizacion %}" class="btn btn-info">
-                                                <i class="fas fa-file-medical"></i> Ver Formulario Pre-Cirugía
-                                            </a>
-                                        </div>
-                                    </div>
-                                {% endfor %}
+                        {% if pre_surgery_form %}
+                            <div class="form-status">
+                                <div class="status-info">
+                                    <span class="status-badge complete">
+                                        <i class="fas fa-check-circle"></i> Completado
+                                    </span>
+                                    <span class="form-date">{{ pre_surgery_form.fecha_reporte|date:"d/m/Y" }}</span>
+                                </div>
+                                <div class="form-actions">
+                                    <a href="{% url 'presurgery-detail' pre_surgery_form.id %}" class="btn btn-info">
+                                        <i class="fas fa-eye"></i> Ver Formulario
+                                    </a>
+                                    <a href="{% url 'presurgery-update' pre_surgery_form.id %}" class="btn btn-primary">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Summary -->
+                            <div class="form-summary">
+                                <div class="summary-item">
+                                    <label>ASA:</label>
+                                    <span class="asa-badge asa-{{ pre_surgery_form.estado_fisico_asa }}">
+                                        {{ pre_surgery_form.get_estado_fisico_asa_display }}
+                                    </span>
+                                </div>
+                                <div class="summary-item">
+                                    <label>Mallampati:</label>
+                                    <span class="mallampati-badge mallampati-{{ pre_surgery_form.mallampati }}">
+                                        Clase {{ pre_surgery_form.mallampati }}
+                                    </span>
+                                </div>
+                                <div class="summary-item">
+                                    <label>IMC:</label>
+                                    <span>{{ pre_surgery_form.imc|floatformat:1 }} kg/m²</span>
+                                </div>
+                                {% if pre_surgery_form.antecedentes_dificultad %}
+                                <div class="summary-item warning">
+                                    <label>⚠️ Antecedentes:</label>
+                                    <span>Vía aérea difícil</span>
+                                </div>
+                                {% endif %}
                             </div>
                         {% else %}
                             <div class="no-forms-message">
-                                No hay formularios pre-cirugía registrados
+                                <i class="fas fa-info-circle"></i>
+                                No hay formulario pre-cirugía registrado
                             </div>
                             <div class="form-actions">
-                                <a href="{% url 'presurgery-create' patient.id_paciente %}" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> Nuevo Formulario Pre-Cirugía
+                                <a href="{% url 'presurgery-create' treatment_case.id_case %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Crear Formulario Pre-Cirugía
                                 </a>
                             </div>
                         {% endif %}
                     </div>
                 
                     <!-- Post-Surgery Forms -->
-                    <div class="forms-card aos-init aos-animate" data-aos="fade-up">
-                        <h3>Formularios Post-Cirugía</h3>
+                    <div class="forms-card" data-aos="fade-up">
+                        <h3><i class="fas fa-clipboard-check"></i> Formulario Post-Cirugía</h3>
                         
-                        {% if presurgery_forms %} 
-                        {% if postsurgery_forms %}
-                        <div class="forms-grid">
-                            {% for form in postsurgery_forms %}
-                            <div class="form-item">
+                        {% if pre_surgery_form %}
+                            {% if post_surgery_form %}
                                 <div class="form-status">
-                                    <span class="status-badge complete">Completado</span>
-                                    <!-- Fix the date display -->
-                                    <span class="form-date">{{ form.folio_hospitalizacion.fecha_reporte|date:"d/m/Y" }}</span>
-                                    <a href="{% url 'postsurgery-detail' form.folio_hospitalizacion.folio_hospitalizacion %}" class="btn btn-info">
-                                        Ver Formulario Post-Cirugía
-                                    </a>
+                                    <div class="status-info">
+                                        <span class="status-badge complete">
+                                            <i class="fas fa-check-circle"></i> Completado
+                                        </span>
+                                        <span class="form-date">{{ post_surgery_form.created_at|date:"d/m/Y" }}</span>
+                                    </div>
+                                    <div class="form-actions">
+                                        <a href="{% url 'postsurgery-detail' post_surgery_form.id %}" class="btn btn-info">
+                                            <i class="fas fa-eye"></i> Ver Formulario
+                                        </a>
+                                        <a href="{% url 'postsurgery-update' post_surgery_form.id %}" class="btn btn-primary">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
-                            {% endfor %}
-                        </div>
+                                
+                                <!-- Quick Summary -->
+                                <div class="form-summary">
+                                    <div class="summary-item">
+                                        <label>Clasificación HAN:</label>
+                                        <span class="han-badge han-{{ post_surgery_form.clasificacion_han }}">
+                                            {{ post_surgery_form.get_clasificacion_han_display }}
+                                        </span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <label>Intentos:</label>
+                                        <span class="{% if post_surgery_form.numero_intentos > 1 %}warning{% endif %}">
+                                            {{ post_surgery_form.numero_intentos }}
+                                        </span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <label>Cormack:</label>
+                                        <span class="cormack-badge cormack-{{ post_surgery_form.cormack }}">
+                                            {{ post_surgery_form.get_cormack_display }}
+                                        </span>
+                                    </div>
+                                    {% if post_surgery_form.morbilidad %}
+                                    <div class="summary-item error">
+                                        <label>⚠️ Morbilidad:</label>
+                                        <span>Sí</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if post_surgery_form.mortalidad %}
+                                    <div class="summary-item critical">
+                                        <label>🚨 Mortalidad:</label>
+                                        <span>Sí</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
                             {% else %}
                                 <div class="no-forms-message">
-                                    No hay formularios post-cirugía registrados
+                                    <i class="fas fa-info-circle"></i>
+                                    No hay formulario post-cirugía registrado
                                 </div>
                                 <div class="form-actions">
-                                    <a href="{% url 'postsurgery-create' patient.id_paciente %}" class="btn btn-primary">
-                                        <i class="fas fa-plus"></i> Nuevo Formulario Post-Cirugía
+                                    <a href="{% url 'postsurgery-create' treatment_case.id_case %}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Crear Formulario Post-Cirugía
                                     </a>
                                 </div>
                             {% endif %}
-                            {% else %}
-                            <div class="no-forms-message">
+                        {% else %}
+                            <div class="no-forms-message warning">
+                                <i class="fas fa-exclamation-triangle"></i>
                                 Se requiere formulario pre-cirugía antes de crear post-cirugía
                             </div>
-                            {% endif %}
-                        </div>
+                        {% endif %}
                     </div>
+                </div>
+
+                <!-- Medical Team Access -->
+                {% if treatment_case.medicos_secundarios.exists %}
+                <div class="info-card" data-aos="fade-up">
+                    <h3><i class="fas fa-user-md"></i> Equipo Médico</h3>
+                    <div class="team-list">
+                        <div class="team-member primary">
+                            <i class="fas fa-star"></i>
+                            <span class="member-name">{{ treatment_case.medico_responsable.get_full_name }}</span>
+                            <span class="member-role">Responsable</span>
+                        </div>
+                        {% for medico in treatment_case.medicos_secundarios.all %}
+                        <div class="team-member">
+                            <i class="fas fa-user-md"></i>
+                            <span class="member-name">{{ medico.get_full_name }}</span>
+                            <span class="member-role">Colaborador</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
 
             <!-- Action Buttons -->
             <div class="detail-actions">
-                <a href="{% url 'patient-update' patient.id_paciente %}" class="btn btn-primary">
+                <a href="{% url 'patient-update' treatment_case.id_case %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> Editar Información
                 </a>
-                <a href="{% url 'patient-delete' patient.id_paciente %}" class="btn btn-danger">
-                    <i class="fas fa-trash"></i> Eliminar Paciente
+                
+                {% if alerts %}
+                <a href="{% url 'alerts-list' %}?case={{ treatment_case.id_case }}" class="btn btn-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Ver Alertas ({{ alerts.count }})
                 </a>
+                {% endif %}
+                
+                {% if treatment_case.medico_responsable == user or user.is_staff %}
+                <a href="{% url 'patient-delete' treatment_case.id_case %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar Caso
+                </a>
+                {% endif %}
+                
                 <a href="{% url 'patient-list' %}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Volver a la Lista
                 </a>
@@ -135,5 +711,98 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/patient_form.js' %}"></script>
+<script src="{% static 'js/patient_detail.js' %}"></script>
+<script>
+// Auto-refresh alerts every 30 seconds
+setInterval(function() {
+    const alertsContainer = document.querySelector('.alerts-summary');
+    if (alertsContainer) {
+        fetch(`/api/alerts/?case={{ treatment_case.id_case }}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.new_alerts > 0) {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error checking alerts:', error));
+    }
+}, 30000);
+
+// Show alerts modal if there are critical alerts
+{% if alerts %}
+const criticalAlerts = {{ alerts|length }};
+if (criticalAlerts > 0) {
+    // Show notification for critical alerts
+    {% for alert in alerts %}
+    {% if alert.alert_type == 'critical' %}
+    if (Notification.permission === 'granted') {
+        new Notification('ALPHA - Alerta Crítica', {
+            body: '{{ alert.title }} - {{ patient.nombre_completo }}',
+            icon: '{% static "images/logo_favicon.png" %}'
+        });
+    }
+    {% endif %}
+    {% endfor %}
+}
+{% endif %}
+
+// Request notification permission on page load
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// Mobile touch gestures
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', function(e) {
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    
+    // Swipe right to go back (if swipe is more horizontal than vertical)
+    if (deltaX > 100 && Math.abs(deltaY) < 100) {
+        const backButton = document.querySelector('.btn-secondary[href*="patient-list"]');
+        if (backButton) {
+            window.location.href = backButton.href;
+        }
+    }
+}, { passive: true });
+
+// Smooth scroll to alerts when clicking alert count
+document.querySelector('.alert-count')?.addEventListener('click', function() {
+    document.querySelector('.alerts-preview')?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+    });
+});
+
+// Auto-hide alerts preview on mobile after 10 seconds
+if (window.innerWidth < 768) {
+    setTimeout(function() {
+        const alertsPreview = document.querySelector('.alerts-preview');
+        if (alertsPreview) {
+            alertsPreview.style.maxHeight = '50px';
+            alertsPreview.style.overflow = 'hidden';
+            
+            // Add "Show more" button
+            const showMoreBtn = document.createElement('button');
+            showMoreBtn.textContent = 'Mostrar más alertas';
+            showMoreBtn.className = 'btn btn-sm btn-outline-light mt-2';
+            showMoreBtn.onclick = function() {
+                alertsPreview.style.maxHeight = 'none';
+                showMoreBtn.style.display = 'none';
+            };
+            alertsPreview.parentNode.appendChild(showMoreBtn);
+        }
+    }, 10000);
+}
+</script>
 {% endblock %}

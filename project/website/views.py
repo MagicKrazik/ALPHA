@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .forms import MedicRegistrationForm
+from .forms import MedicRegistrationForm, TreatmentCaseForm, PatientForm
 from django.contrib.auth import get_user_model
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -8,26 +8,24 @@ from .utils import account_activation_token, send_verification_email
 from django.utils import timezone
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from .forms import ContactForm
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.paginator import Paginator
-from .forms import PatientForm
 from django.utils.translation import gettext_lazy as _
-from .forms import PreSurgeryForm, PostSurgeryForm, PreSurgeryCreateForm, PostSurgeryCreateForm
-from .models import PostDuringSurgeryForm
+from .forms import PreSurgeryCreateForm, PostSurgeryCreateForm
+from .models import PostDuringSurgeryForm, TreatmentCase, PreSurgeryForm
 from django.db.models import Count, Avg, Q, Sum
 from django.db.models.functions import TruncMonth, TruncWeek, ExtractHour
 import json
 from datetime import datetime, timedelta
-from django.http import JsonResponse, FileResponse
-from .models import Patient, PreSurgeryForm, PostDuringSurgeryForm
+from django.http import JsonResponse, FileResponse, Http404
+from .models import Patient, PreSurgeryForm, PostDuringSurgeryForm, RiskAlert
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from io import BytesIO
 import pandas as pd
-
 
 
 # Home view
@@ -152,202 +150,246 @@ def contact(request):
     return render(request, 'contact.html', context)
 
 
-## patient registration views:
+## Patient and Treatment Case Views
 
 @login_required
 def patient_list(request):
     """
-    List view for patients with search and form type filtering
+    List view for patients with search and filtering
     """
     search_query = request.GET.get('q', '')
-    form_type = request.GET.get('form', '')
-    patients = Patient.objects.filter(medico=request.user, activo=True)
+    
+    # Get treatment cases the user has access to
+    treatment_cases = TreatmentCase.objects.filter(
+        Q(medico_responsable=request.user) | Q(medicos_secundarios=request.user),
+        activo=True
+    ).select_related('patient')
     
     if search_query:
-        patients = patients.filter(
+        treatment_cases = treatment_cases.filter(
             Q(folio_hospitalizacion__icontains=search_query) |
-            Q(nombres__icontains=search_query) |
-            Q(apellidos__icontains=search_query)
+            Q(patient__nombres__icontains=search_query) |
+            Q(patient__apellidos__icontains=search_query)
         )
     
-    context = {
-        'patients': patients,
-        'search_query': search_query,
-        'form_type': form_type  # Pass the form type to the template
-    }
+    # Add pagination
+    paginator = Paginator(treatment_cases, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
-    # If a specific form type is requested, use the appropriate template
-    if form_type == 'pre':
-        return render(request, 'presurgery_list.html', context)
-    elif form_type == 'post':
-        return render(request, 'postsurgery_list.html', context)
+    context = {
+        'treatment_cases': page_obj,
+        'search_query': search_query,
+    }
     
     return render(request, 'patient_list.html', context)
 
 @login_required
 def patient_create(request):
     """
-    Create view for new patient registration
+    Create view for new patient and treatment case
     """
     if request.method == 'POST':
-        form = PatientForm(request.POST, request.FILES)
-        if form.is_valid():
-            patient = form.save(commit=False)
-            patient.medico = request.user
-            patient.save()
-            messages.success(request, _('Paciente registrado exitosamente.'))
-            return redirect('patient-detail', patient.id_paciente)
+        patient_form = PatientForm(request.POST)
+        case_form = TreatmentCaseForm(request.POST, request.FILES)
+        
+        if patient_form.is_valid() and case_form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Save patient
+                    patient = patient_form.save()
+                    
+                    # Save treatment case
+                    treatment_case = case_form.save(commit=False)
+                    treatment_case.patient = patient
+                    treatment_case.medico_responsable = request.user
+                    treatment_case.save()
+                    
+                    messages.success(request, _('Paciente y caso registrados exitosamente.'))
+                    return redirect('patient-detail', treatment_case.id_case)
+            except Exception as e:
+                messages.error(request, f'Error al guardar: {str(e)}')
     else:
-        form = PatientForm()
-    
-    return render(request, 'patient_form.html', {'form': form})
-
-@login_required
-def patient_update(request, pk):
-    """
-    Update view for existing patient information
-    """
-    patient = get_object_or_404(Patient, id_paciente=pk, medico=request.user)
-    
-    if request.method == 'POST':
-        form = PatientForm(request.POST, request.FILES, instance=patient)
-        if form.is_valid():
-            form.save()
-            messages.success(request, _('Información del paciente actualizada.'))
-            return redirect('patient-detail', pk)
-    else:
-        form = PatientForm(instance=patient)
+        patient_form = PatientForm()
+        case_form = TreatmentCaseForm()
     
     return render(request, 'patient_form.html', {
-        'form': form,
-        'patient': patient
+        'patient_form': patient_form,
+        'case_form': case_form
     })
 
 @login_required
 def patient_detail(request, pk):
     """
-    Detail view for patient information
+    Detail view for treatment case
     """
-    patient = get_object_or_404(Patient, id_paciente=pk)
+    treatment_case = get_object_or_404(TreatmentCase, id_case=pk)
     
-    # Check if user has permission to view this patient
-    if patient.medico != request.user and not request.user.is_staff:
+    # Check access permissions
+    if not treatment_case.user_has_access(request.user):
         messages.error(request, _('No tienes permiso para ver esta información.'))
         return redirect('patient-list')
     
-    # Get pre-surgery forms for this patient
-    presurgery_forms = PreSurgeryForm.objects.filter(
-        folio_hospitalizacion__startswith=f"PRE-{patient.folio_hospitalizacion}"
-    ).order_by('-fecha_reporte')
+    # Get related forms
+    try:
+        pre_surgery_form = treatment_case.pre_surgery_form
+    except PreSurgeryForm.DoesNotExist:
+        pre_surgery_form = None
     
-    # Get post-surgery forms for this patient
-    postsurgery_forms = PostDuringSurgeryForm.objects.filter(
-        folio_hospitalizacion__folio_hospitalizacion__in=presurgery_forms.values_list('folio_hospitalizacion', flat=True)
-    ).order_by('-folio_hospitalizacion__fecha_reporte')
+    try:
+        post_surgery_form = treatment_case.post_surgery_form
+    except PostDuringSurgeryForm.DoesNotExist:
+        post_surgery_form = None
+    
+    # Get alerts for this case
+    alerts = RiskAlert.objects.filter(
+        treatment_case=treatment_case,
+        status='active'
+    ).order_by('-triggered_at')
     
     context = {
-        'patient': patient,
-        'presurgery_forms': presurgery_forms,
-        'postsurgery_forms': postsurgery_forms,
+        'treatment_case': treatment_case,
+        'patient': treatment_case.patient,
+        'pre_surgery_form': pre_surgery_form,
+        'post_surgery_form': post_surgery_form,
+        'alerts': alerts,
     }
     
     return render(request, 'patient_detail.html', context)
 
 @login_required
-def patient_delete(request, pk):
+def patient_update(request, pk):
     """
-    Delete view for patient (soft delete)
+    Update view for treatment case and patient
     """
-    patient = get_object_or_404(Patient, id_paciente=pk, medico=request.user)
+    treatment_case = get_object_or_404(TreatmentCase, id_case=pk)
+    
+    # Check access permissions
+    if not treatment_case.user_has_access(request.user):
+        messages.error(request, _('No tienes permiso para editar esta información.'))
+        return redirect('patient-list')
     
     if request.method == 'POST':
-        patient.activo = False
-        patient.save()
-        messages.success(request, _('Paciente eliminado exitosamente.'))
+        patient_form = PatientForm(request.POST, instance=treatment_case.patient)
+        case_form = TreatmentCaseForm(request.POST, request.FILES, instance=treatment_case)
+        
+        if patient_form.is_valid() and case_form.is_valid():
+            try:
+                with transaction.atomic():
+                    patient_form.save()
+                    case_form.save()
+                    messages.success(request, _('Información actualizada exitosamente.'))
+                    return redirect('patient-detail', pk)
+            except Exception as e:
+                messages.error(request, f'Error al actualizar: {str(e)}')
+    else:
+        patient_form = PatientForm(instance=treatment_case.patient)
+        case_form = TreatmentCaseForm(instance=treatment_case)
+    
+    return render(request, 'patient_form.html', {
+        'patient_form': patient_form,
+        'case_form': case_form,
+        'treatment_case': treatment_case
+    })
+
+@login_required
+def patient_delete(request, pk):
+    """
+    Delete view for treatment case (soft delete)
+    """
+    treatment_case = get_object_or_404(TreatmentCase, id_case=pk)
+    
+    # Check access permissions
+    if treatment_case.medico_responsable != request.user and not request.user.is_staff:
+        messages.error(request, _('No tienes permiso para eliminar este caso.'))
+        return redirect('patient-list')
+    
+    if request.method == 'POST':
+        treatment_case.activo = False
+        treatment_case.save()
+        messages.success(request, _('Caso eliminado exitosamente.'))
         return redirect('patient-list')
     
     return render(request, 'patient_confirm_delete.html', {
-        'patient': patient
+        'treatment_case': treatment_case,
+        'patient': treatment_case.patient
     })
 
 
-## pre and post surgery forms:
+## Pre and Post Surgery Forms
 
 @login_required
-def presurgery_create(request, patient_id):
-    patient = get_object_or_404(Patient, id_paciente=patient_id, medico=request.user)
+def presurgery_create(request, case_id):
+    """
+    Create pre-surgery form for a treatment case
+    """
+    treatment_case = get_object_or_404(TreatmentCase, id_case=case_id)
     
-    try:
-        # Check if a form already exists for this patient
-        existing_form = PreSurgeryForm.objects.filter(
-            folio_hospitalizacion=f"PRE-{patient.folio_hospitalizacion}"
-        ).first()
-        
-        if existing_form:
-            messages.warning(request, 'Ya existe un formulario pre-quirúrgico para este paciente.')
-            return redirect('presurgery-detail', pk=existing_form.folio_hospitalizacion)
-
-        if request.method == 'POST':
-            form = PreSurgeryCreateForm(request.POST, request.FILES)
-            if form.is_valid():
-                try:
+    # Check access permissions
+    if not treatment_case.user_has_access(request.user):
+        messages.error(request, _('No tienes permiso para crear este formulario.'))
+        return redirect('patient-list')
+    
+    # Check if pre-surgery form already exists
+    if hasattr(treatment_case, 'pre_surgery_form'):
+        messages.warning(request, 'Ya existe un formulario pre-quirúrgico para este caso.')
+        return redirect('presurgery-detail', treatment_case.pre_surgery_form.id)
+    
+    if request.method == 'POST':
+        form = PreSurgeryCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
                     presurgery = form.save(commit=False)
-                    presurgery.folio_hospitalizacion = f"PRE-{patient.folio_hospitalizacion}"
-                    presurgery.fecha_reporte = timezone.now().date()
-                    presurgery.medico = request.user.get_full_name()
+                    presurgery.treatment_case = treatment_case
                     presurgery.save()
                     
                     messages.success(request, 'Formulario pre-quirúrgico creado exitosamente.')
-                    return redirect('patient-detail', patient_id)
-                except Exception as e:
-                    messages.error(request, f'Error al guardar el formulario: {str(e)}')
-            else:
-                error_messages = []
-                for field, errors in form.errors.items():
-                    error_messages.append(f"{field}: {', '.join(errors)}")
-                messages.error(request, f'Por favor corrija los siguientes errores: {"; ".join(error_messages)}')
-        else:
-            initial_data = {
-                'nombres': patient.nombres,
-                'apellidos': patient.apellidos,
-                'fecha_nacimiento': patient.fecha_nacimiento,
-                'medico': request.user.get_full_name(),
-                'fecha_reporte': timezone.now().date(),
-                'medico_tratante': request.user.get_full_name(),
-            }
-            form = PreSurgeryCreateForm(initial=initial_data)
+                    return redirect('patient-detail', case_id)
+            except Exception as e:
+                messages.error(request, f'Error al guardar el formulario: {str(e)}')
+    else:
+        # Pre-populate form with patient data
+        initial_data = {
+            'fecha_reporte': timezone.now().date(),
+            'medico_tratante': request.user.get_full_name(),
+        }
+        form = PreSurgeryCreateForm(initial=initial_data)
 
-        return render(request, 'presurgery_form.html', {
-            'form': form,
-            'patient': patient
-        })
-
-    except Exception as e:
-        messages.error(request, f'Error inesperado: {str(e)}')
-        return redirect('patient-list')
+    return render(request, 'presurgery_form.html', {
+        'form': form,
+        'treatment_case': treatment_case,
+        'patient': treatment_case.patient
+    })
 
 @login_required
 def presurgery_detail(request, pk):
-    presurgery = get_object_or_404(PreSurgeryForm, folio_hospitalizacion=pk)
-    patient = get_object_or_404(Patient, folio_hospitalizacion=pk.replace('PRE-', ''))
+    """
+    Detail view for pre-surgery form
+    """
+    presurgery = get_object_or_404(PreSurgeryForm, id=pk)
     
-    # Check if user has permission to view this form
-    if patient.medico != request.user and not request.user.is_staff:
-        messages.error(request, 'No tienes permiso para ver este formulario.')
+    # Check access permissions
+    if not presurgery.treatment_case.user_has_access(request.user):
+        messages.error(request, _('No tienes permiso para ver este formulario.'))
         return redirect('patient-list')
     
     return render(request, 'presurgery_detail.html', {
         'form': presurgery,
-        'patient': patient
+        'treatment_case': presurgery.treatment_case,
+        'patient': presurgery.patient
     })
 
 @login_required
 def presurgery_update(request, pk):
-    presurgery = get_object_or_404(PreSurgeryForm, folio_hospitalizacion=pk)
-    patient = get_object_or_404(Patient, folio_hospitalizacion=pk.replace('PRE-', ''))
+    """
+    Update view for pre-surgery form
+    """
+    presurgery = get_object_or_404(PreSurgeryForm, id=pk)
     
-    if patient.medico != request.user and not request.user.is_staff:
-        messages.error(request, 'No tienes permiso para editar este formulario.')
+    # Check access permissions
+    if not presurgery.treatment_case.user_has_access(request.user):
+        messages.error(request, _('No tienes permiso para editar este formulario.'))
         return redirect('patient-list')
     
     if request.method == 'POST':
@@ -359,79 +401,82 @@ def presurgery_update(request, pk):
                 return redirect('presurgery-detail', pk=pk)
             except Exception as e:
                 messages.error(request, f'Error al actualizar el formulario: {str(e)}')
-        else:
-            messages.error(request, 'Por favor corrija los errores en el formulario.')
     else:
         form = PreSurgeryCreateForm(instance=presurgery)
     
     return render(request, 'presurgery_form.html', {
         'form': form,
         'presurgery': presurgery,
-        'patient': patient
+        'treatment_case': presurgery.treatment_case,
+        'patient': presurgery.patient
     })
 
-
 @login_required
-def postsurgery_create(request, patient_id):
-    patient = get_object_or_404(Patient, id_paciente=patient_id, medico=request.user)
-    presurgery = get_object_or_404(PreSurgeryForm, folio_hospitalizacion=f"PRE-{patient.folio_hospitalizacion}")
+def postsurgery_create(request, case_id):
+    """
+    Create post-surgery form for a treatment case
+    """
+    treatment_case = get_object_or_404(TreatmentCase, id_case=case_id)
     
-    try:
-        # Check if a form already exists
-        existing_form = PostDuringSurgeryForm.objects.filter(
-            folio_hospitalizacion=presurgery
-        ).first()
-        
-        if existing_form:
-            messages.warning(request, 'Ya existe un formulario post-quirúrgico para este paciente.')
-            return redirect('postsurgery-detail', pk=existing_form.folio_hospitalizacion.folio_hospitalizacion)
-
-        if request.method == 'POST':
-            form = PostSurgeryCreateForm(request.POST, request.FILES)
-            if form.is_valid():
-                try:
+    # Check access permissions
+    if not treatment_case.user_has_access(request.user):
+        messages.error(request, _('No tienes permiso para crear este formulario.'))
+        return redirect('patient-list')
+    
+    # Check if pre-surgery form exists
+    if not hasattr(treatment_case, 'pre_surgery_form'):
+        messages.error(request, 'Se requiere un formulario pre-quirúrgico antes de crear el post-quirúrgico.')
+        return redirect('patient-detail', case_id)
+    
+    # Check if post-surgery form already exists
+    if hasattr(treatment_case, 'post_surgery_form'):
+        messages.warning(request, 'Ya existe un formulario post-quirúrgico para este caso.')
+        return redirect('postsurgery-detail', treatment_case.post_surgery_form.id)
+    
+    if request.method == 'POST':
+        form = PostSurgeryCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
                     postsurgery = form.save(commit=False)
-                    postsurgery.folio_hospitalizacion = presurgery
+                    postsurgery.treatment_case = treatment_case
+                    postsurgery.pre_surgery_form = treatment_case.pre_surgery_form
                     postsurgery.save()
                     
                     messages.success(request, 'Formulario post-quirúrgico creado exitosamente.')
-                    return redirect('patient-detail', patient_id)
-                except Exception as e:
-                    messages.error(request, f'Error al guardar el formulario: {str(e)}')
-            else:
-                error_messages = []
-                for field, errors in form.errors.items():
-                    error_messages.append(f"{field}: {', '.join(errors)}")
-                messages.error(request, f'Por favor corrija los siguientes errores: {"; ".join(error_messages)}')
-        else:
-            form = PostSurgeryCreateForm()
+                    return redirect('patient-detail', case_id)
+            except Exception as e:
+                messages.error(request, f'Error al guardar el formulario: {str(e)}')
+    else:
+        # Pre-populate with default values
+        initial_data = {
+            'nombre_anestesiologo': request.user.get_full_name(),
+            'especialidad': request.user.get_especialidad_display(),
+        }
+        form = PostSurgeryCreateForm(initial=initial_data)
 
-        return render(request, 'postsurgery_form.html', {
-            'form': form,
-            'patient': patient
-        })
-
-    except Exception as e:
-        messages.error(request, f'Error inesperado: {str(e)}')
-        return redirect('patient-list')
+    return render(request, 'postsurgery_form.html', {
+        'form': form,
+        'treatment_case': treatment_case,
+        'patient': treatment_case.patient
+    })
 
 @login_required
 def postsurgery_detail(request, pk):
     """
-    View for displaying post-surgery form details
+    Detail view for post-surgery form
     """
-    postsurgery = get_object_or_404(PostDuringSurgeryForm, folio_hospitalizacion__folio_hospitalizacion=pk)
-    # Get the related patient through the pre-surgery form
-    patient = Patient.objects.get(folio_hospitalizacion=pk.replace('PRE-', ''))
+    postsurgery = get_object_or_404(PostDuringSurgeryForm, id=pk)
     
-    # Check permissions
-    if patient.medico != request.user and not request.user.is_staff:
-        messages.error(request, 'No tienes permiso para ver este formulario.')
+    # Check access permissions
+    if not postsurgery.treatment_case.user_has_access(request.user):
+        messages.error(request, _('No tienes permiso para ver este formulario.'))
         return redirect('patient-list')
     
     return render(request, 'postsurgery_detail.html', {
         'form': postsurgery,
-        'patient': patient
+        'treatment_case': postsurgery.treatment_case,
+        'patient': postsurgery.patient
     })
 
 @login_required
@@ -439,13 +484,12 @@ def postsurgery_update(request, pk):
     """
     Update view for post-surgery form
     """
-    postsurgery = get_object_or_404(PostDuringSurgeryForm, folio_hospitalizacion__folio_hospitalizacion=pk)
-    patient = Patient.objects.get(folio_hospitalizacion=pk.replace('PRE-', ''))
+    postsurgery = get_object_or_404(PostDuringSurgeryForm, id=pk)
     
-    # Check permissions
-    if patient.medico != request.user and not request.user.is_staff:
+    # Check access permissions
+    if not postsurgery.treatment_case.user_has_access(request.user):
         messages.error(request, _('No tienes permiso para editar este formulario.'))
-        return redirect('patient-detail', pk=patient.id_paciente)
+        return redirect('patient-list')
     
     if request.method == 'POST':
         form = PostSurgeryCreateForm(request.POST, request.FILES, instance=postsurgery)
@@ -456,34 +500,39 @@ def postsurgery_update(request, pk):
                 return redirect('postsurgery-detail', pk=pk)
             except Exception as e:
                 messages.error(request, f'Error al actualizar el formulario: {str(e)}')
-        else:
-            messages.error(request, _('Por favor corrija los errores en el formulario.'))
     else:
         form = PostSurgeryCreateForm(instance=postsurgery)
     
     return render(request, 'postsurgery_form.html', {
         'form': form,
-        'patient': patient,
-        'postsurgery': postsurgery
+        'postsurgery': postsurgery,
+        'treatment_case': postsurgery.treatment_case,
+        'patient': postsurgery.patient
     })
 
 
-## Dashboard view:
+## Dashboard Views
 
 @login_required
 def dashboard(request):
-    # Get current user's patients
-    user_patients = Patient.objects.filter(medico=request.user, activo=True)
+    """
+    Main dashboard view with statistics and charts
+    """
+    # Get user's accessible treatment cases
+    user_cases = TreatmentCase.objects.filter(
+        Q(medico_responsable=request.user) | Q(medicos_secundarios=request.user),
+        activo=True
+    )
     
     # Basic Statistics
-    total_patients = user_patients.count()
-    patients_this_month = user_patients.filter(
-        fecha_registro__month=datetime.now().month
+    total_cases = user_cases.count()
+    cases_this_month = user_cases.filter(
+        fecha_ingreso__month=datetime.now().month
     ).count()
     
     # PreSurgery Statistics
     presurgery_forms = PreSurgeryForm.objects.filter(
-        medico=request.user.get_full_name()
+        treatment_case__in=user_cases
     )
     
     # ASA Score Distribution
@@ -505,11 +554,11 @@ def dashboard(request):
         Q(distancia_inter_incisiva__lt=3)
     ).count()
     
-    # Monthly Surgeries Trend
-    monthly_surgeries = (presurgery_forms
-        .annotate(month=TruncMonth('fecha_reporte'))
+    # Monthly Cases Trend
+    monthly_cases = (user_cases
+        .annotate(month=TruncMonth('fecha_ingreso'))
         .values('month')
-        .annotate(count=Count('folio_hospitalizacion'))  # Changed from 'id' to 'folio_hospitalizacion'
+        .annotate(count=Count('id_case'))
         .order_by('month'))
     
     # BMI Distribution
@@ -531,8 +580,8 @@ def dashboard(request):
         '60+': 0
     }
     
-    for patient in user_patients:
-        age = calculate_age(patient.fecha_nacimiento)
+    for case in user_cases.select_related('patient'):
+        age = calculate_age(case.patient.fecha_nacimiento)
         if age <= 18:
             age_distribution['0-18'] += 1
         elif age <= 40:
@@ -544,7 +593,7 @@ def dashboard(request):
     
     # Complications Analysis
     postsurgery_forms = PostDuringSurgeryForm.objects.filter(
-        folio_hospitalizacion__in=presurgery_forms.values('folio_hospitalizacion')
+        treatment_case__in=user_cases
     )
     
     complications_data = {
@@ -557,7 +606,7 @@ def dashboard(request):
     }
     
     # Calculate percentages
-    total_surgeries = complications_data['total_surgeries'] or 1  # Prevent division by zero
+    total_surgeries = complications_data['total_surgeries'] or 1
     complications_data.update({
         'complications_percentage': round(
             (complications_data['with_complications'] / total_surgeries) * 100
@@ -578,21 +627,28 @@ def dashboard(request):
     }
     
     # Calculate first attempt success rate
-    total_intubations = intubation_data['total_attempts'] or 1  # Prevent division by zero
+    total_intubations = intubation_data['total_attempts'] or 1
     intubation_data['success_rate'] = round(
         (intubation_data['first_attempt'] / total_intubations) * 100
     )
 
+    # Active alerts count
+    active_alerts = RiskAlert.objects.filter(
+        treatment_case__in=user_cases,
+        status='active'
+    ).count()
+
     context = {
-        'total_patients': total_patients,
-        'patients_this_month': patients_this_month,
+        'total_cases': total_cases,
+        'cases_this_month': cases_this_month,
         'high_risk_airways': high_risk_airways,
+        'active_alerts': active_alerts,
         'asa_distribution': json.dumps(list(asa_distribution)),
         'mallampati_data': json.dumps(list(mallampati_distribution)),
-        'monthly_surgeries': json.dumps([{
+        'monthly_cases': json.dumps([{
             'month': d['month'].strftime('%Y-%m-%d') if d['month'] else None,
             'count': d['count']
-        } for d in monthly_surgeries]),
+        } for d in monthly_cases]),
         'bmi_distribution': json.dumps(bmi_distribution),
         'age_distribution': json.dumps(age_distribution),
         'complications_data': complications_data,
@@ -602,62 +658,34 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 @login_required
-def get_detailed_stats(request):
-    """API endpoint for additional dashboard statistics"""
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    
-    # Filter based on date range if provided
-    queryset = PreSurgeryForm.objects.filter(medico=request.user.get_full_name())
-    if start_date and end_date:
-        queryset = queryset.filter(
-            fecha_reporte__range=[start_date, end_date]
-        )
-    
-    # Calculate additional statistics
-    stats = {
-        'mallampati_distribution': queryset.values('mallampati').annotate(
-            count=Count('mallampati')
-        ).order_by('mallampati'),
-        'average_bmi': queryset.aggregate(Avg('imc'))['imc__avg'],
-        'comorbidities_count': queryset.exclude(
-            comorbilidades=''
-        ).count(),
-    }
-    
-    return JsonResponse(stats)
-
-
-# In views.py, update the get_dashboard_stats function
-
-@login_required
 def get_dashboard_stats(request):
     """API endpoint for real-time dashboard statistics"""
     try:
-        date_range = request.GET.get('date_range', '30')  # Default to 30 days
+        date_range = request.GET.get('date_range', '30')
         start_date = datetime.now() - timedelta(days=int(date_range))
         
-        # Get user's patients and forms
-        user_patients = Patient.objects.filter(medico=request.user, activo=True)
+        # Get user's accessible treatment cases
+        user_cases = TreatmentCase.objects.filter(
+            Q(medico_responsable=request.user) | Q(medicos_secundarios=request.user),
+            activo=True,
+            fecha_ingreso__gte=start_date
+        )
+        
         presurgery_forms = PreSurgeryForm.objects.filter(
-            medico=request.user.get_full_name(),
-            fecha_reporte__gte=start_date
+            treatment_case__in=user_cases
         )
         postsurgery_forms = PostDuringSurgeryForm.objects.filter(
-            folio_hospitalizacion__in=presurgery_forms.values('folio_hospitalizacion')
+            treatment_case__in=user_cases
         )
 
         # Calculate statistics
         stats = {
             'summary': {
-                'total_patients': user_patients.count(),
-                'active_patients': user_patients.filter(
-                    fecha_registro__gte=start_date
-                ).count(),
+                'total_cases': user_cases.count(),
+                'active_cases': user_cases.filter(fecha_alta__isnull=True).count(),
                 'surgeries_completed': postsurgery_forms.count(),
                 'high_risk_cases': presurgery_forms.filter(
-                    Q(mallampati__gte=3) |
-                    Q(estado_fisico_asa__gte=4)
+                    Q(mallampati__gte=3) | Q(estado_fisico_asa__gte=4)
                 ).count()
             },
             
@@ -679,7 +707,7 @@ def get_dashboard_stats(request):
                 for item in presurgery_forms
                 .annotate(week=TruncWeek('fecha_reporte'))
                 .values('week')
-                .annotate(count=Count('folio_hospitalizacion'))
+                .annotate(count=Count('id'))
                 .order_by('week')
             ],
             
@@ -719,13 +747,6 @@ def get_dashboard_stats(request):
                 ).count()
             },
             
-            'bmi_distribution': {
-                'underweight': presurgery_forms.filter(imc__lt=18.5).count(),
-                'normal': presurgery_forms.filter(imc__range=(18.5, 24.9)).count(),
-                'overweight': presurgery_forms.filter(imc__range=(25, 29.9)).count(),
-                'obese': presurgery_forms.filter(imc__gte=30).count()
-            },
-            
             'performance_metrics': {
                 'complication_rate': round(
                     (postsurgery_forms.filter(complicaciones__isnull=False).count() /
@@ -760,9 +781,10 @@ def export_dashboard(request):
             bottom=Side(style='thin')
         )
 
-        # Patient Summary
-        ws.append(["Resumen de Pacientes"])
+        # Export header
+        ws.append(["Reporte de Dashboard ALPHA"])
         ws.append(["Fecha de Exportación", datetime.now().strftime("%Y-%m-%d %H:%M")])
+        ws.append(["Doctor", request.user.get_full_name()])
         ws.append([])
 
         # Style headers
@@ -771,15 +793,21 @@ def export_dashboard(request):
             cell.fill = header_fill
             cell.border = border
 
+        # Get user data
+        user_cases = TreatmentCase.objects.filter(
+            Q(medico_responsable=request.user) | Q(medicos_secundarios=request.user),
+            activo=True
+        )
+
         # Add statistics sections
         sections = [
-            ("Información General", get_general_stats(request.user)),
-            ("Estadísticas ASA", get_asa_stats(request.user)),
-            ("Complicaciones", get_complication_stats(request.user)),
-            ("Métricas de Vía Aérea", get_airway_stats(request.user))
+            ("Información General", get_general_stats(request.user, user_cases)),
+            ("Estadísticas ASA", get_asa_stats(user_cases)),
+            ("Complicaciones", get_complication_stats(user_cases)),
+            ("Métricas de Vía Aérea", get_airway_stats(user_cases))
         ]
 
-        row = 4
+        row = 5
         for section_title, data in sections:
             ws.append([section_title])
             ws.merge_cells(f'A{row}:C{row}')
@@ -789,8 +817,9 @@ def export_dashboard(request):
             row += 1
             for key, value in data.items():
                 ws.append([key, value])
+                row += 1
             
-            row += 2
+            row += 1
 
         # Set column widths
         ws.column_dimensions['A'].width = 35
@@ -803,39 +832,40 @@ def export_dashboard(request):
         buffer.seek(0)
 
         # Return file
-        return FileResponse(
+        response = FileResponse(
             buffer,
             as_attachment=True,
             filename=f'dashboard_export_{datetime.now().strftime("%Y%m%d")}.xlsx'
         )
+        response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        return response
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
 # Helper functions for export
-def get_general_stats(user):
+def get_general_stats(user, user_cases):
     return {
-        "Total Pacientes": Patient.objects.filter(medico=user, activo=True).count(),
-        "Cirugías Este Mes": PreSurgeryForm.objects.filter(
-            medico=user.get_full_name(),
-            fecha_reporte__month=datetime.now().month
+        "Total Casos": user_cases.count(),
+        "Casos Este Mes": user_cases.filter(
+            fecha_ingreso__month=datetime.now().month
         ).count(),
-        "Pacientes de Alto Riesgo": PreSurgeryForm.objects.filter(
-            medico=user.get_full_name(),
+        "Casos de Alto Riesgo": PreSurgeryForm.objects.filter(
+            treatment_case__in=user_cases,
             estado_fisico_asa__gte=4
         ).count()
     }
 
-def get_asa_stats(user):
+def get_asa_stats(user_cases):
     return dict(PreSurgeryForm.objects.filter(
-        medico=user.get_full_name()
+        treatment_case__in=user_cases
     ).values('estado_fisico_asa').annotate(
         count=Count('estado_fisico_asa')
     ).values_list('estado_fisico_asa', 'count'))
 
-def get_complication_stats(user):
+def get_complication_stats(user_cases):
     postsurgery_forms = PostDuringSurgeryForm.objects.filter(
-        nombre_anestesiologo=user.get_full_name()
+        treatment_case__in=user_cases
     )
     total = postsurgery_forms.count() or 1
     complications = postsurgery_forms.filter(
@@ -848,49 +878,86 @@ def get_complication_stats(user):
         "Tasa de Complicaciones": f"{(complications/total)*100:.2f}%"
     }
 
-def get_airway_stats(user):
+def get_airway_stats(user_cases):
     presurgery_forms = PreSurgeryForm.objects.filter(
-        medico=user.get_full_name()
+        treatment_case__in=user_cases
     )
     return {
         "Vía Aérea Difícil": presurgery_forms.filter(
-            Q(mallampati__gte=3) |
-            Q(patil_aldrete__gte=3)
+            Q(mallampati__gte=3) | Q(patil_aldrete__gte=3)
         ).count(),
         "Mallampati Promedio": presurgery_forms.aggregate(
             Avg('mallampati')
-        )['mallampati__avg']
+        )['mallampati__avg'] or 0
     }
 
-def calculate_average_age(patients):
-    total_age = 0
-    count = 0
-    for patient in patients:
-        try:
-            age = (datetime.now().date() - patient.fecha_nacimiento).days // 365
-            total_age += age
-            count += 1
-        except:
-            continue
-    return round(total_age / max(count, 1), 1)
 
+# ===== ALERT SYSTEM VIEWS =====
 
 @login_required
-def presurgery_detail(request, pk):
-    # Get the pre-surgery form
-    form = get_object_or_404(PreSurgeryForm, folio_hospitalizacion=pk)
+def alerts_list(request):
+    """
+    List view for risk alerts
+    """
+    # Get user's accessible treatment cases
+    user_cases = TreatmentCase.objects.filter(
+        Q(medico_responsable=request.user) | Q(medicos_secundarios=request.user),
+        activo=True
+    )
     
-    # Get the related patient
-    patient = get_object_or_404(Patient, folio_hospitalizacion=pk.replace('PRE-', ''))
+    # Filter alerts
+    status_filter = request.GET.get('status', 'active')
+    alerts = RiskAlert.objects.filter(
+        treatment_case__in=user_cases
+    )
     
-    # Check if user has permission to view this form
-    if patient.medico != request.user and not request.user.is_staff:
-        messages.error(request, 'No tienes permiso para ver este formulario.')
-        return redirect('patient-list')
+    if status_filter != 'all':
+        alerts = alerts.filter(status=status_filter)
+    
+    alerts = alerts.order_by('-triggered_at')
+    
+    # Add pagination
+    paginator = Paginator(alerts, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
     context = {
-        'form': form,
-        'patient': patient
+        'alerts': page_obj,
+        'status_filter': status_filter,
     }
     
-    return render(request, 'presurgery_detail.html', context)
+    return render(request, 'alerts_list.html', context)
+
+@login_required
+def alert_detail(request, pk):
+    """
+    Detail view for a specific alert
+    """
+    alert = get_object_or_404(RiskAlert, id=pk)
+    
+    # Check access permissions
+    if not alert.treatment_case.user_has_access(request.user):
+        raise Http404
+    
+    return render(request, 'alert_detail.html', {
+        'alert': alert,
+        'treatment_case': alert.treatment_case,
+    })
+
+@login_required
+def alert_acknowledge(request, pk):
+    """
+    Acknowledge an alert
+    """
+    alert = get_object_or_404(RiskAlert, id=pk)
+    
+    # Check access permissions
+    if not alert.treatment_case.user_has_access(request.user):
+        raise Http404
+    
+    if request.method == 'POST':
+        alert.acknowledge(request.user)
+        messages.success(request, 'Alerta reconocida exitosamente.')
+        return redirect('alert-detail', pk)
+    
+    return redirect('alert-detail', pk)

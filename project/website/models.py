@@ -12,25 +12,20 @@ from rest_framework.authtoken.models import Token
 import uuid
 from django.urls import reverse
 import re
+from datetime import datetime, timezone
+from django.utils import timezone as django_timezone
 
 
 class Patient(models.Model):
+    """
+    Core patient model - represents a unique individual patient
+    """
     # Identification and linking fields
     id_paciente = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
         editable=False,
         verbose_name=_("ID Paciente")
-    )
-    
-    # Link to User (optional, for patients who register themselves)
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='patient_profile',
-        verbose_name=_("Usuario")
     )
     
     # Personal information
@@ -57,33 +52,6 @@ class Patient(models.Model):
         null=True
     )
     
-    # Hospital information
-    folio_hospitalizacion = models.CharField(
-        max_length=50,
-        unique=True,
-        verbose_name=_("Folio de Hospitalización")
-    )
-    
-    # Doctor relationship (multiple doctors can treat one patient)
-    medico_principal = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name='patients_primary',
-        verbose_name=_("Médico Principal")
-    )
-    medicos_secundarios = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name='patients_secondary',
-        blank=True,
-        verbose_name=_("Médicos Secundarios")
-    )
-    
-    # Barcode field
-    codigo_barras = models.ImageField(
-        upload_to='codigos_barra/%Y/%m/',
-        verbose_name=_("Código de Barras")
-    )
-    
     # Metadata
     fecha_registro = models.DateTimeField(
         auto_now_add=True,
@@ -107,21 +75,34 @@ class Patient(models.Model):
         verbose_name_plural = _("Pacientes")
         ordering = ['-fecha_registro']
         indexes = [
-            models.Index(fields=['folio_hospitalizacion']),
-            models.Index(fields=['medico_principal', 'fecha_registro'])
+            models.Index(fields=['nombres', 'apellidos']),
+            models.Index(fields=['fecha_nacimiento']),
+            models.Index(fields=['fecha_registro'])
         ]
 
     def __str__(self):
-        return f"{self.folio_hospitalizacion} - {self.nombres} {self.apellidos}"
+        return f"{self.nombres} {self.apellidos}"
 
     def get_absolute_url(self):
         return reverse('patient-detail', args=[str(self.id_paciente)])
 
+    @property
+    def edad(self):
+        """Calculate patient age"""
+        today = datetime.now().date()
+        return today.year - self.fecha_nacimiento.year - (
+            (today.month, today.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day)
+        )
+
+    @property
+    def nombre_completo(self):
+        return f"{self.nombres} {self.apellidos}"
+
 
 class TreatmentCase(models.Model):
     """
-    Represents a single treatment case with its unique folio_hospitalizacion
-    A patient can have multiple treatment cases
+    Represents a single treatment case/hospitalization
+    Links patient to specific medical treatment with unique folio
     """
     id_case = models.UUIDField(
         primary_key=True,
@@ -143,26 +124,23 @@ class TreatmentCase(models.Model):
         verbose_name=_("Folio de Hospitalización")
     )
     
-    medico_asignado = models.ForeignKey(
+    medico_responsable = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        related_name='treatment_cases',
-        verbose_name=_("Médico Asignado")
+        related_name='treatment_cases_responsable',
+        verbose_name=_("Médico Responsable")
     )
     
-    fecha_inicio = models.DateField(
-        verbose_name=_("Fecha de Inicio"),
-        default=timezone.now
+    # Additional doctors who can access this case
+    medicos_secundarios = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='treatment_cases_secundarios',
+        blank=True,
+        verbose_name=_("Médicos Secundarios")
     )
     
-    fecha_fin = models.DateField(
-        verbose_name=_("Fecha de Finalización"),
-        null=True,
-        blank=True
-    )
-    
-    diagnostico = models.TextField(
-        verbose_name=_("Diagnóstico"),
+    diagnostico_inicial = models.TextField(
+        verbose_name=_("Diagnóstico Inicial"),
         blank=True
     )
     
@@ -171,29 +149,45 @@ class TreatmentCase(models.Model):
         verbose_name=_("Caso Activo")
     )
     
-    fecha_registro = models.DateTimeField(
+    fecha_ingreso = models.DateTimeField(
         auto_now_add=True,
-        verbose_name=_("Fecha de Registro")
+        verbose_name=_("Fecha de Ingreso")
     )
     
-    ultima_actualizacion = models.DateTimeField(
-        auto_now=True,
-        verbose_name=_("Última Actualización")
+    fecha_alta = models.DateTimeField(
+        verbose_name=_("Fecha de Alta"),
+        null=True,
+        blank=True
+    )
+    
+    # Barcode field moved here since it's case-specific
+    codigo_barras = models.ImageField(
+        upload_to='codigos_barra/%Y/%m/',
+        verbose_name=_("Código de Barras"),
+        blank=True,
+        null=True
     )
 
     class Meta:
         verbose_name = _("Caso de Tratamiento")
         verbose_name_plural = _("Casos de Tratamiento")
-        ordering = ['-fecha_inicio']
+        ordering = ['-fecha_ingreso']
         indexes = [
             models.Index(fields=['folio_hospitalizacion']),
-            models.Index(fields=['patient']),
-            models.Index(fields=['medico_asignado'])
+            models.Index(fields=['patient', 'activo']),
+            models.Index(fields=['medico_responsable', 'fecha_ingreso'])
         ]
 
     def __str__(self):
-        return f"{self.folio_hospitalizacion} - {self.patient.nombres} {self.patient.apellidos}"
+        return f"{self.folio_hospitalizacion} - {self.patient.nombre_completo}"
 
+    def user_has_access(self, user):
+        """Check if user has access to this treatment case"""
+        return (
+            self.medico_responsable == user or
+            self.medicos_secundarios.filter(id=user.id).exists() or
+            user.is_staff
+        )
 
 
 class ContactMessage(models.Model):
@@ -221,7 +215,7 @@ class ContactMessage(models.Model):
         return f"{self.subject} - {self.name} ({self.created_at.strftime('%d/%m/%Y')})"
 
 
-# Rule to avoid accents in patient registration fields, to avoid bad character bugs
+# Rule to avoid accents in patient registration fields
 def validate_no_accents_or_special_chars(value):
     """Validates that the name does not contain accents or special characters."""
     if not re.match(r'^[a-zA-Z\s]+$', value):
@@ -262,7 +256,6 @@ class MedicoUser(AbstractUser):
     email = models.EmailField(
         _('email address'),
         unique=True,
-        validators=[validate_no_accents_or_special_chars],
         error_messages={
             'unique': _("Ya existe un usuario con este correo electrónico."),
         }
@@ -271,14 +264,12 @@ class MedicoUser(AbstractUser):
     nombre = models.CharField(
         _('nombre'),
         max_length=100,
-        validators=[validate_no_accents_or_special_chars],
         help_text=_('Nombres del médico')
     )
     
     apellidos = models.CharField(
         _('apellidos'),
         max_length=100,
-        validators=[validate_no_accents_or_special_chars],
         help_text=_('Apellidos del médico')
     )
     
@@ -313,24 +304,24 @@ class MedicoUser(AbstractUser):
     def get_full_name(self):
         return f"{self.nombre} {self.apellidos}"
 
+
 class PreSurgeryForm(models.Model):
     """
     Model for pre-surgery evaluation form containing patient information and initial assessments.
     """
+    # Primary key
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
 
-    # Link to TreatmentCase instead of directly to Patient
+    # Link to TreatmentCase (one-to-one relationship)
     treatment_case = models.OneToOneField(
         TreatmentCase,
         on_delete=models.CASCADE,
         verbose_name=_("Caso de Tratamiento"),
         related_name='pre_surgery_form'
-    )
-
-    # Use folio_hospitalizacion as a field, not as primary key
-    folio_hospitalizacion = models.CharField(
-        max_length=50,
-        verbose_name=_("Folio de Hospitalización"),
-        editable=False
     )
 
     ASA_CHOICES = [
@@ -346,18 +337,11 @@ class PreSurgeryForm(models.Model):
     PATIL_ALDRETE_CHOICES = [(i, str(i)) for i in range(1, 5)]
     PROTRUSION_CHOICES = [(i, str(i)) for i in range(1, 5)]
     
-    # Patient Information
-    nombres = models.CharField(max_length=100, verbose_name="Nombres")
-    apellidos = models.CharField(max_length=100, verbose_name="Apellidos")
-    medico = models.CharField(max_length=100, verbose_name="Médico")
-    fecha_nacimiento = models.DateField(verbose_name="Fecha de Nacimiento")
-    codigo_barras = models.ImageField(
-        upload_to='codigos_barra/',
-        verbose_name="Código de Barras"
-    )
-    
     # Medical Information
-    fecha_reporte = models.DateField(verbose_name="Fecha de Reporte")
+    fecha_reporte = models.DateField(
+        verbose_name="Fecha de Reporte",
+        default=django_timezone.now
+    )
     medico_tratante = models.CharField(
         max_length=100,
         verbose_name="Médico Tratante"
@@ -369,7 +353,7 @@ class PreSurgeryForm(models.Model):
     # Physical Measurements
     peso = models.FloatField(verbose_name="Peso (kg)")
     talla = models.FloatField(verbose_name="Talla (cm)")
-    imc = models.FloatField(verbose_name="IMC")
+    imc = models.FloatField(verbose_name="IMC", null=True, blank=True)
     
     # Medical Assessment
     estado_fisico_asa = models.IntegerField(
@@ -386,7 +370,7 @@ class PreSurgeryForm(models.Model):
     )
     
     # Pre-surgery Details
-    ayuno_hrs = models.IntegerField(verbose_name="Ayuno (hrs)")
+    ayuno_hrs = models.FloatField(verbose_name="Ayuno (hrs)")
     uso_glp1 = models.BooleanField(
         default=False,
         verbose_name="Uso de GLP1"
@@ -430,7 +414,7 @@ class PreSurgeryForm(models.Model):
         default=False,
         verbose_name="Uso de USG Gástrico"
     )
-    usg_gastrico_ml = models.IntegerField(
+    usg_gastrico_ml = models.FloatField(
         null=True,
         blank=True,
         verbose_name="USG Gástrico (ml)"
@@ -443,10 +427,13 @@ class PreSurgeryForm(models.Model):
     
     # Vital Signs
     fc = models.IntegerField(verbose_name="FC")
-    ta = models.TextField(verbose_name="TA")
+    ta = models.CharField(max_length=20, verbose_name="TA")
     spo2_aire = models.IntegerField(verbose_name="SpO2 Aire Ambiente")
     spo2_oxigeno = models.IntegerField(verbose_name="SpO2 con Oxígeno")
-    glasgow = models.IntegerField(verbose_name="Glasgow")
+    glasgow = models.IntegerField(
+        verbose_name="Glasgow",
+        validators=[MinValueValidator(3), MaxValueValidator(15)]
+    )
     
     # Airway Assessment
     mallampati = models.IntegerField(
@@ -473,8 +460,11 @@ class PreSurgeryForm(models.Model):
     
     # Additional Assessments
     macocha = models.IntegerField(verbose_name="Macocha")
-    stop_bang = models.IntegerField(verbose_name="Stop Bang")
-    desviacion_traquea = models.IntegerField(
+    stop_bang = models.IntegerField(
+        verbose_name="Stop Bang",
+        validators=[MinValueValidator(0), MaxValueValidator(8)]
+    )
+    desviacion_traquea = models.FloatField(
         verbose_name="Desviación de la Tráquea (cm)"
     )
     problemas_deglucion = models.BooleanField(
@@ -490,24 +480,60 @@ class PreSurgeryForm(models.Model):
         verbose_name="Observaciones"
     )
 
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
-        return f"{self.folio_hospitalizacion} - {self.nombres} {self.apellidos}"
+        return f"Pre-Surgery: {self.treatment_case}"
+
+    @property
+    def patient(self):
+        return self.treatment_case.patient
+
+    @property
+    def folio_hospitalizacion(self):
+        return self.treatment_case.folio_hospitalizacion
 
     def save(self, *args, **kwargs):
-        # Set folio_hospitalizacion from treatment_case
-        if self.treatment_case and not self.folio_hospitalizacion:
-            self.folio_hospitalizacion = f"PRE-{self.treatment_case.folio_hospitalizacion}"
+        # Auto-calculate BMI if not provided
+        if self.peso and self.talla and not self.imc:
+            height_m = self.talla / 100
+            self.imc = round(self.peso / (height_m ** 2), 2)
         super().save(*args, **kwargs)
 
+    def clean(self):
+        super().clean()
+        # Validate Glasgow score
+        if self.glasgow and (self.glasgow < 3 or self.glasgow > 15):
+            raise ValidationError({
+                'glasgow': _('El valor de Glasgow debe estar entre 3 y 15')
+            })
+
+        # Validate SpO2 values
+        for field in ['spo2_aire', 'spo2_oxigeno']:
+            value = getattr(self, field, None)
+            if value is not None and (value < 0 or value > 100):
+                raise ValidationError({
+                    field: _('El valor de SpO2 debe estar entre 0 y 100')
+                })
+
     class Meta:
-        verbose_name = _("Pre-Surgery Form")
-        verbose_name_plural = _("Pre-Surgery Forms")
+        verbose_name = _("Formulario Pre-Quirúrgico")
+        verbose_name_plural = _("Formularios Pre-Quirúrgicos")
+        ordering = ['-fecha_reporte']
 
 
 class PostDuringSurgeryForm(models.Model):
     """
     Model for recording information during and after surgery.
     """
+    # Primary key
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
     
     # Link to the treatment case and pre-surgery form
     treatment_case = models.OneToOneField(
@@ -524,28 +550,27 @@ class PostDuringSurgeryForm(models.Model):
         related_name='post_surgery_form'
     )
     
-    
     HAN_CHOICES = [(i, str(i)) for i in range(5)]  # 0-4
     CORMACK_CHOICES = [(i, str(i)) for i in range(1, 5)]  # 1-4
     
     # Location and Personnel
-    lugar_problema = models.CharField( #check
+    lugar_problema = models.CharField(
         max_length=200,
         verbose_name="Lugar o Área del Problema"
     )
-    presencia_anestesiologo = models.BooleanField( #check
+    presencia_anestesiologo = models.BooleanField(
         verbose_name="Presencia de Anestesiólogo"
     )
     
     # Equipment and Techniques
-    tecnica_utilizada = models.CharField( #check
+    tecnica_utilizada = models.CharField(
         max_length=200,
         verbose_name="Técnica Utilizada"
     )
-    carro_via_aerea = models.BooleanField( #check
+    carro_via_aerea = models.BooleanField(
         verbose_name="Carro de Vía Aérea Difícil Disponible"
     )
-    tipo_video_laringoscopia = models.CharField( #check 
+    tipo_video_laringoscopia = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="Tipo de Video-laringoscopía"
@@ -557,117 +582,120 @@ class PostDuringSurgeryForm(models.Model):
     )
     
     # Classifications and Measurements
-    clasificacion_han = models.IntegerField( #check
+    clasificacion_han = models.IntegerField(
         choices=HAN_CHOICES,
         validators=[MinValueValidator(0), MaxValueValidator(4)],
         verbose_name="Clasificación HAN"
     )
-    aditamento_via_aerea = models.CharField( #check
+    aditamento_via_aerea = models.CharField(
         max_length=200,
         verbose_name="Aditamento de Vía Aérea"
     )
-    tiempo_preoxigenacion = models.IntegerField( #check
+    tiempo_preoxigenacion = models.IntegerField(
         verbose_name="Tiempo de Pre-oxigenación (minutos)"
     )
     
     # Supraglottic Device
-    uso_supraglotico = models.BooleanField( #check
+    uso_supraglotico = models.BooleanField(
         verbose_name="Uso de Supraglótico"
     )
-    tipo_supraglotico = models.CharField( #check
+    tipo_supraglotico = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="Tipo de Supraglótico"
     )
-    problemas_supragloticos = models.TextField( #check
+    problemas_supragloticos = models.TextField(
         blank=True,
         verbose_name="Problemas con Supraglóticos"
     )
     
     # Intubation Details
-    tipo_intubacion = models.CharField( #check
+    tipo_intubacion = models.CharField(
         max_length=100,
         verbose_name="Tipo de Intubación"
     )
-    numero_intentos = models.IntegerField( #check
+    numero_intentos = models.IntegerField(
         validators=[MinValueValidator(1)],
         verbose_name="Número de Intentos"
     )
-    laringoscopia_directa = models.TextField( #check
+    laringoscopia_directa = models.TextField(
         verbose_name="Laringoscopía Directa"
     )
-    cormack = models.IntegerField( #check
+    cormack = models.IntegerField(
         choices=CORMACK_CHOICES,
         validators=[MinValueValidator(1), MaxValueValidator(4)],
         verbose_name="Cormack"
     )
-    pogo = models.FloatField( #check
+    pogo = models.FloatField(
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         verbose_name="POGO (%)"
     )
     
     # Additional Procedures
-    intubacion_tecnica_mixta = models.CharField(  #check
+    intubacion_tecnica_mixta = models.CharField(
         max_length=200,
         blank=True,
         verbose_name="Intubación Técnica Mixta"
     )
-    intubacion_despierto = models.BooleanField( #check
+    intubacion_despierto = models.BooleanField(
         verbose_name="Intubación Despierto"
     )
-    descripcion_intubacion_despierto = models.TextField( #check
+    descripcion_intubacion_despierto = models.TextField(
         blank=True,
         verbose_name="Descripción Intubación Despierto"
     )
     
     # Anesthesia Details
-    tipo_anestesia = models.CharField( #check
+    tipo_anestesia = models.CharField(
         max_length=200,
         verbose_name="Tipo de Anestesia"
     )
-    sedacion = models.CharField( #check
+    sedacion = models.CharField(
         max_length=200,
         verbose_name="Sedación"
     )
-    observaciones = models.TextField( # no salio en la pagina
+    observaciones = models.TextField(
         blank=True,
         verbose_name="Observaciones"
     )
-    cooperacion_paciente = models.CharField( #check
+    cooperacion_paciente = models.CharField(
         max_length=200,
         verbose_name="Cooperación del Paciente"
     )
     
     # Emergency Procedures
-    algoritmo_no_intubacion = models.BooleanField( # no salio en la pagina
+    algoritmo_no_intubacion = models.BooleanField(
+        default=False,
         verbose_name="Algoritmo No Intubación"
     )
-    crico_tiroidotomia = models.BooleanField( # no salio en la pagina
+    crico_tiroidotomia = models.BooleanField(
+        default=False,
         verbose_name="Crico-tiroidotomía"
     )
-    traqueostomia_percutanea = models.BooleanField( # no salio en la pagina
+    traqueostomia_percutanea = models.BooleanField(
+        default=False,
         verbose_name="Traqueostomía Percutánea"
     )
     
     # Outcomes
-    complicaciones = models.TextField( #check
+    complicaciones = models.TextField(
         blank=True,
         verbose_name="Complicaciones"
     )
-    resultado_final = models.TextField( #check
+    resultado_final = models.TextField(
         verbose_name="Resultado Final"
     )
     
     # Media
-    fotos_videos = models.FileField( # no salio en la pagina
+    fotos_videos = models.FileField(
         upload_to='fotos_videos_cirugia/',
         blank=True,
         verbose_name="Fotos o Videos Relacionados"
     )
     
     # Morbidity and Mortality
-    morbilidad = models.BooleanField(default=False) 
-    descripcion_morbilidad = models.TextField( #check
+    morbilidad = models.BooleanField(default=False)
+    descripcion_morbilidad = models.TextField(
         blank=True,
         verbose_name="Descripción Morbilidad"
     )
@@ -678,54 +706,345 @@ class PostDuringSurgeryForm(models.Model):
     )
     
     # Medical Personnel
-    nombre_anestesiologo = models.CharField( #check
+    nombre_anestesiologo = models.CharField(
         max_length=200,
         verbose_name="Nombre del Anestesiólogo"
     )
-    cedula_profesional = models.CharField( #check
+    cedula_profesional = models.CharField(
         max_length=50,
         verbose_name="Cédula Profesional"
     )
-    especialidad = models.CharField( #check
+    especialidad = models.CharField(
         max_length=100,
         verbose_name="Especialidad"
     )
-    nombre_residente = models.CharField( #check
+    nombre_residente = models.CharField(
         max_length=200,
+        blank=True,
         verbose_name="Nombre del Residente"
     )
 
-    def __str__(self):
-        return f"Post-Surgery Form - {self.folio_hospitalizacion}"
-    
-    def save(self, *args, **kwargs):
-        # Ensure both forms are linked to the same treatment case
-        if self.pre_surgery_form and not self.treatment_case:
-            self.treatment_case = self.pre_surgery_form.treatment_case
-        super().save(*args, **kwargs)
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        verbose_name = _("Post-During Surgery Form")
-        verbose_name_plural = _("Post-During Surgery Forms")
+    def __str__(self):
+        return f"Post-Surgery: {self.treatment_case}"
 
     @property
     def patient(self):
-        """Get the related patient"""
-        return Patient.objects.get(folio_hospitalizacion=self.folio_hospitalizacion.folio_hospitalizacion.replace('PRE-', ''))    
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        # Ensure the folio_hospitalizacion is properly set
-        if self.folio_hospitalizacion:
-            try:
-                patient = Patient.objects.get(
-                    folio_hospitalizacion=self.folio_hospitalizacion.folio_hospitalizacion.replace('PRE-', '')
-                )
-            except Patient.DoesNotExist:
-                raise ValidationError('No se encontró el paciente relacionado.')
-        return cleaned_data
+        return self.treatment_case.patient
 
-    def save(self, *args, **kwargs):
-        # Ensure the form is valid before saving
-        self.full_clean()
-        return super().save(*args, **kwargs)
+    @property
+    def folio_hospitalizacion(self):
+        return self.treatment_case.folio_hospitalizacion
+
+    def clean(self):
+        super().clean()
+        # Validate POGO score
+        if self.pogo is not None and (self.pogo < 0 or self.pogo > 100):
+            raise ValidationError({'pogo': _('El valor POGO debe estar entre 0 y 100')})
+        
+        # Validate number of attempts
+        if self.numero_intentos is not None and self.numero_intentos < 1:
+            raise ValidationError({'numero_intentos': _('Debe haber al menos un intento')})
+
+    class Meta:
+        verbose_name = _("Formulario Post-Quirúrgico")
+        verbose_name_plural = _("Formularios Post-Quirúrgicos")
+        ordering = ['-created_at']
+
+
+# ===== ALERT SYSTEM MODELS =====
+
+class RiskFactor(models.Model):
+    """
+    Defines different risk factors that can be calculated from patient data
+    """
+    CATEGORY_CHOICES = [
+        ('airway', 'Vía Aérea'),
+        ('cardiac', 'Cardiovascular'),
+        ('respiratory', 'Respiratorio'),
+        ('metabolic', 'Metabólico'),
+        ('general', 'General'),
+    ]
+    
+    SEVERITY_CHOICES = [
+        ('low', 'Bajo'),
+        ('medium', 'Moderado'),
+        ('high', 'Alto'),
+        ('critical', 'Crítico'),
+    ]
+
+    name = models.CharField(max_length=100, verbose_name="Nombre del Factor")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    description = models.TextField(verbose_name="Descripción")
+    severity_level = models.CharField(max_length=10, choices=SEVERITY_CHOICES)
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Factor de Riesgo"
+        verbose_name_plural = "Factores de Riesgo"
+
+    def __str__(self):
+        return f"{self.name} ({self.get_severity_level_display()})"
+
+
+class AlertRule(models.Model):
+    """
+    Defines rules for generating alerts based on patient data
+    """
+    RULE_TYPE_CHOICES = [
+        ('threshold', 'Umbral'),
+        ('combination', 'Combinación'),
+        ('trend', 'Tendencia'),
+        ('ml_prediction', 'Predicción ML'),
+    ]
+
+    name = models.CharField(max_length=100, verbose_name="Nombre de la Regla")
+    description = models.TextField(verbose_name="Descripción")
+    rule_type = models.CharField(max_length=20, choices=RULE_TYPE_CHOICES)
+    
+    # JSON field to store rule configuration
+    rule_config = models.JSONField(
+        verbose_name="Configuración de la Regla",
+        help_text="JSON con la configuración específica de la regla"
+    )
+    
+    risk_factors = models.ManyToManyField(
+        RiskFactor,
+        related_name='alert_rules',
+        blank=True
+    )
+    
+    is_active = models.BooleanField(default=True)
+    priority = models.IntegerField(default=1, help_text="1=Máxima, 5=Mínima")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Regla de Alerta"
+        verbose_name_plural = "Reglas de Alerta"
+        ordering = ['priority', '-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_rule_type_display()})"
+
+
+class PatientRiskProfile(models.Model):
+    """
+    Stores calculated risk profile for each patient/treatment case
+    """
+    treatment_case = models.OneToOneField(
+        TreatmentCase,
+        on_delete=models.CASCADE,
+        related_name='risk_profile'
+    )
+    
+    # Overall risk scores
+    airway_risk_score = models.FloatField(null=True, blank=True)
+    cardiovascular_risk_score = models.FloatField(null=True, blank=True)
+    respiratory_risk_score = models.FloatField(null=True, blank=True)
+    overall_risk_score = models.FloatField(null=True, blank=True)
+    
+    # Risk categories
+    difficult_airway_probability = models.FloatField(null=True, blank=True)
+    complication_probability = models.FloatField(null=True, blank=True)
+    
+    # Associated risk factors
+    identified_risk_factors = models.ManyToManyField(
+        RiskFactor,
+        related_name='patient_profiles',
+        blank=True
+    )
+    
+    # Calculation metadata
+    last_calculated = models.DateTimeField(auto_now=True)
+    calculation_version = models.CharField(max_length=20, default="1.0")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Perfil de Riesgo del Paciente"
+        verbose_name_plural = "Perfiles de Riesgo de Pacientes"
+
+    def __str__(self):
+        return f"Risk Profile: {self.treatment_case}"
+
+    @property
+    def risk_level(self):
+        """Determine overall risk level based on scores"""
+        if not self.overall_risk_score:
+            return 'unknown'
+        
+        if self.overall_risk_score >= 80:
+            return 'critical'
+        elif self.overall_risk_score >= 60:
+            return 'high'
+        elif self.overall_risk_score >= 40:
+            return 'medium'
+        else:
+            return 'low'
+
+
+class RiskAlert(models.Model):
+    """
+    Stores generated alerts for treatment cases
+    """
+    ALERT_TYPE_CHOICES = [
+        ('preventive', 'Preventiva'),
+        ('warning', 'Advertencia'),
+        ('critical', 'Crítica'),
+        ('informational', 'Informativa'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Activa'),
+        ('acknowledged', 'Reconocida'),
+        ('resolved', 'Resuelta'),
+        ('dismissed', 'Descartada'),
+    ]
+
+    treatment_case = models.ForeignKey(
+        TreatmentCase,
+        on_delete=models.CASCADE,
+        related_name='alerts'
+    )
+    
+    alert_rule = models.ForeignKey(
+        AlertRule,
+        on_delete=models.CASCADE,
+        related_name='generated_alerts'
+    )
+    
+    alert_type = models.CharField(max_length=20, choices=ALERT_TYPE_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    
+    title = models.CharField(max_length=200, verbose_name="Título")
+    message = models.TextField(verbose_name="Mensaje")
+    
+    # Risk assessment
+    risk_score = models.FloatField(null=True, blank=True)
+    confidence_level = models.FloatField(null=True, blank=True)
+    
+    # Recommendations
+    recommendations = models.JSONField(
+        null=True, blank=True,
+        verbose_name="Recomendaciones"
+    )
+    
+    # Alert lifecycle
+    triggered_at = models.DateTimeField(auto_now_add=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    acknowledged_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='acknowledged_alerts'
+    )
+    
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='resolved_alerts'
+    )
+
+    class Meta:
+        verbose_name = "Alerta de Riesgo"
+        verbose_name_plural = "Alertas de Riesgo"
+        ordering = ['-triggered_at']
+        indexes = [
+            models.Index(fields=['treatment_case', 'status']),
+            models.Index(fields=['alert_type', 'status']),
+            models.Index(fields=['triggered_at']),
+        ]
+
+    def __str__(self):
+        return f"Alert: {self.title} - {self.treatment_case}"
+
+    def acknowledge(self, user):
+        """Mark alert as acknowledged"""
+        self.status = 'acknowledged'
+        self.acknowledged_by = user
+        self.acknowledged_at = django_timezone.now()
+        self.save()
+
+    def resolve(self, user):
+        """Mark alert as resolved"""
+        self.status = 'resolved'
+        self.resolved_by = user
+        self.resolved_at = django_timezone.now()
+        self.save()
+
+
+class AlertNotification(models.Model):
+    """
+    Stores notifications sent to users about alerts
+    """
+    NOTIFICATION_TYPE_CHOICES = [
+        ('email', 'Email'),
+        ('sms', 'SMS'),
+        ('push', 'Push Notification'),
+        ('in_app', 'In-App'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('sent', 'Enviado'),
+        ('delivered', 'Entregado'),
+        ('failed', 'Falló'),
+    ]
+
+    alert = models.ForeignKey(
+        RiskAlert,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='received_notifications'
+    )
+    
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    sent_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    
+    error_message = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Notificación de Alerta"
+        verbose_name_plural = "Notificaciones de Alerta"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification: {self.notification_type} to {self.recipient.username}"
+
+
+# Signal handlers for automatic risk calculation
+@receiver(post_save, sender=PreSurgeryForm)
+def calculate_presurgery_risk(sender, instance, created, **kwargs):
+    """Calculate risk profile when pre-surgery form is saved"""
+    if created:
+        from .tasks import calculate_patient_risk_profile
+        # Queue background task for risk calculation
+        calculate_patient_risk_profile.delay(instance.treatment_case.id)
+
+
+@receiver(post_save, sender=PostDuringSurgeryForm)
+def update_postsurgery_risk(sender, instance, created, **kwargs):
+    """Update risk profile when post-surgery form is saved"""
+    from .tasks import calculate_patient_risk_profile
+    # Queue background task for risk calculation update
+    calculate_patient_risk_profile.delay(instance.treatment_case.id)
