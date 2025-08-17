@@ -19,6 +19,7 @@ from .forms import PreSurgeryForm, PostSurgeryForm, PreSurgeryCreateForm, PostSu
 from .models import PostDuringSurgeryForm
 from django.db.models import Count, Avg, Q, Sum
 from django.db.models.functions import TruncMonth, TruncWeek, ExtractHour
+from django.core.exceptions import ValidationError
 import json
 from datetime import datetime, timedelta
 from django.http import JsonResponse, FileResponse
@@ -28,6 +29,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from io import BytesIO
 import pandas as pd
 
+from .risk_assessment import RiskCalculator
 
 
 # Home view
@@ -371,49 +373,81 @@ def presurgery_update(request, pk):
     })
 
 
+# In views.py - Replace the postsurgery_create function
 @login_required
 def postsurgery_create(request, patient_id):
-    patient = get_object_or_404(Patient, id_paciente=patient_id, medico=request.user)
-    presurgery = get_object_or_404(PreSurgeryForm, folio_hospitalizacion=f"PRE-{patient.folio_hospitalizacion}")
+    """Create post-surgery form - FIXED VERSION"""
+    print(f"DEBUG: Starting postsurgery_create for patient {patient_id}")
+    print(f"DEBUG: Request method: {request.method}")
     
+    if request.method == 'POST':
+        print(f"DEBUG: POST data: {request.POST}")
+        print(f"DEBUG: FILES data: {request.FILES}")
+    patient = get_object_or_404(Patient, id_paciente=patient_id, medico=request.user)
+    
+    # Get the pre-surgery form
     try:
-        # Check if a form already exists
-        existing_form = PostDuringSurgeryForm.objects.filter(
-            folio_hospitalizacion=presurgery
-        ).first()
-        
-        if existing_form:
-            messages.warning(request, 'Ya existe un formulario post-quirúrgico para este paciente.')
-            return redirect('postsurgery-detail', pk=existing_form.folio_hospitalizacion.folio_hospitalizacion)
+        presurgery = PreSurgeryForm.objects.get(
+            folio_hospitalizacion=f"PRE-{patient.folio_hospitalizacion}"
+        )
+    except PreSurgeryForm.DoesNotExist:
+        messages.error(request, 'Debe completar el formulario pre-quirúrgico antes de crear el post-quirúrgico.')
+        return redirect('patient-detail', patient_id)
+    
+    # Check if post-surgery form already exists
+    try:
+        existing_post = PostDuringSurgeryForm.objects.get(folio_hospitalizacion=presurgery)
+        messages.warning(request, 'Ya existe un formulario post-quirúrgico para este paciente.')
+        return redirect('postsurgery-detail', pk=presurgery.folio_hospitalizacion)
+    except PostDuringSurgeryForm.DoesNotExist:
+        pass  # This is what we want - no existing form
 
-        if request.method == 'POST':
-            form = PostSurgeryCreateForm(request.POST, request.FILES)
-            if form.is_valid():
-                try:
-                    postsurgery = form.save(commit=False)
-                    postsurgery.folio_hospitalizacion = presurgery
-                    postsurgery.save()
-                    
-                    messages.success(request, 'Formulario post-quirúrgico creado exitosamente.')
-                    return redirect('patient-detail', patient_id)
-                except Exception as e:
-                    messages.error(request, f'Error al guardar el formulario: {str(e)}')
-            else:
-                error_messages = []
-                for field, errors in form.errors.items():
-                    error_messages.append(f"{field}: {', '.join(errors)}")
-                messages.error(request, f'Por favor corrija los siguientes errores: {"; ".join(error_messages)}')
+    if request.method == 'POST':
+        form = PostSurgeryCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                # Create the instance but don't save yet
+                postsurgery = form.save(commit=False)
+                postsurgery.folio_hospitalizacion = presurgery
+                
+                # Set default values if not provided
+                if not postsurgery.nombre_anestesiologo:
+                    postsurgery.nombre_anestesiologo = request.user.get_full_name()
+                
+                if not postsurgery.especialidad:
+                    postsurgery.especialidad = request.user.get_especialidad_display()
+                
+                # Save the instance
+                postsurgery.save()
+                
+                messages.success(request, 'Formulario post-quirúrgico creado exitosamente.')
+                return redirect('patient-detail', patient_id)
+                
+            except ValidationError as e:
+                # Handle validation errors
+                for field, errors in e.message_dict.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
+            except Exception as e:
+                messages.error(request, f'Error al guardar el formulario: {str(e)}')
         else:
-            form = PostSurgeryCreateForm()
+            # Handle form errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        # GET request - create empty form with initial data
+        initial_data = {
+            'nombre_anestesiologo': request.user.get_full_name(),
+            'especialidad': request.user.get_especialidad_display() if hasattr(request.user, 'get_especialidad_display') else '',
+        }
+        form = PostSurgeryCreateForm(initial=initial_data)
 
-        return render(request, 'postsurgery_form.html', {
-            'form': form,
-            'patient': patient
-        })
-
-    except Exception as e:
-        messages.error(request, f'Error inesperado: {str(e)}')
-        return redirect('patient-list')
+    return render(request, 'postsurgery_form.html', {
+        'form': form,
+        'patient': patient,
+        'presurgery': presurgery
+    })
 
 @login_required
 def postsurgery_detail(request, pk):
@@ -598,6 +632,37 @@ def dashboard(request):
         'complications_data': complications_data,
         'intubation_data': intubation_data,
     }
+    
+    # Add risk assessment data
+    presurgery_forms = PreSurgeryForm.objects.filter(
+        medico=request.user.get_full_name()
+    )
+    
+    # Calculate risk distributions
+    risk_distribution = {'low': 0, 'moderate': 0, 'high': 0}
+    high_risk_patients = []
+    
+    for form in presurgery_forms:
+        risk_score, risk_factors = RiskCalculator.calculate_airway_risk(form)
+        risk_level = RiskCalculator.get_risk_level(risk_score)
+        
+        if risk_score >= 70:
+            risk_distribution['high'] += 1
+            high_risk_patients.append({
+                'form': form,
+                'risk_score': risk_score,
+                'risk_factors': risk_factors
+            })
+        elif risk_score >= 40:
+            risk_distribution['moderate'] += 1
+        else:
+            risk_distribution['low'] += 1
+    
+    context.update({
+        'risk_distribution': json.dumps(risk_distribution),
+        'high_risk_patients': high_risk_patients[:5],  # Top 5 high-risk
+        'total_risk_assessments': presurgery_forms.count()
+    })
     
     return render(request, 'dashboard.html', context)
 
@@ -894,3 +959,11 @@ def presurgery_detail(request, pk):
     }
     
     return render(request, 'presurgery_detail.html', context)
+
+
+# Add these error handlers to views.py
+def custom_404(request, exception):
+    return render(request, 'errors/404.html', status=404)
+
+def custom_500(request):
+    return render(request, 'errors/500.html', status=500)

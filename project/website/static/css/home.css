@@ -760,3 +760,13 @@ strong.alpha {
     opacity: 1;
     transform: translateY(0);
 }
+
+/* Add to home.css */
+.hero-video-container.no-video {
+    background: linear-gradient(135deg, 
+        rgba(43, 69, 112, 0.95), 
+        rgba(69, 183, 209, 0.85)), 
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%232B4570" width="1200" height="600"/><circle fill="%2345B7D1" cx="200" cy="150" r="50" opacity="0.3"/><circle fill="%2345B7D1" cx="800" cy="400" r="80" opacity="0.2"/></svg>');
+    background-size: cover;
+    background-position: center;
+}

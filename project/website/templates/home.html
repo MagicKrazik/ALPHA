@@ -13,7 +13,9 @@
 <section class="hero-section">
     <!-- Video Background Container -->
     <div class="hero-video-container">
-        <video class="hero-video" autoplay muted loop playsinline poster="{% static 'images/hero-poster.jpg' %}">
+        <video class="hero-video" autoplay muted loop playsinline 
+            poster="{% static 'images/hero-poster.jpg' %}"
+            onerror="this.style.display='none'; document.querySelector('.hero-overlay').style.background='linear-gradient(135deg, rgba(43, 69, 112, 0.95), rgba(69, 183, 209, 0.85))';">
             <source src="{% static 'videos/medical_bg.mp4' %}" type="video/mp4">
         </video>
     </div>

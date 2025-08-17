@@ -84,6 +84,21 @@ class Patient(models.Model):
 
     def get_absolute_url(self):
         return reverse('patient-detail', args=[str(self.id_paciente)])
+    
+    # Add to Patient model for better folio validation
+    def clean(self):
+        super().clean()
+        if self.folio_hospitalizacion:
+            # Ensure folio is uppercase and properly formatted
+            self.folio_hospitalizacion = self.folio_hospitalizacion.upper().strip()
+            
+            # Check for duplicate folios
+            existing = Patient.objects.filter(
+                folio_hospitalizacion=self.folio_hospitalizacion
+            ).exclude(pk=self.pk)
+            
+            if existing.exists():
+                raise ValidationError({'folio_hospitalizacion': 'Este folio ya existe'})
 
 
 
@@ -179,6 +194,17 @@ class MedicoUser(AbstractUser):
     
     def get_full_name(self):
         return f"{self.nombre} {self.apellidos}"
+    
+    def get_especialidad_display(self):
+        """Return the display name for the specialty"""
+        specialty_dict = {
+            'ANE': 'Anestesiología',
+            'ANP': 'Anestesiología Pediátrica', 
+            'MEC': 'Medicina Crítica',
+            'MED': 'Medicina del Dolor',
+            'OTR': 'Otra Especialidad'
+        }
+        return specialty_dict.get(self.especialidad, self.especialidad)
 
 class PreSurgeryForm(models.Model):
     """
@@ -545,25 +571,40 @@ class PostDuringSurgeryForm(models.Model):
     class Meta:
         verbose_name = _("Post-During Surgery Form")
         verbose_name_plural = _("Post-During Surgery Forms")
-
+    
     @property
     def patient(self):
-        """Get the related patient"""
-        return Patient.objects.get(folio_hospitalizacion=self.folio_hospitalizacion.folio_hospitalizacion.replace('PRE-', ''))    
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        # Ensure the folio_hospitalizacion is properly set
-        if self.folio_hospitalizacion:
-            try:
-                patient = Patient.objects.get(
-                    folio_hospitalizacion=self.folio_hospitalizacion.folio_hospitalizacion.replace('PRE-', '')
-                )
-            except Patient.DoesNotExist:
-                raise ValidationError('No se encontró el paciente relacionado.')
-        return cleaned_data
+        """Get the related patient safely"""
+        try:
+            return Patient.objects.get(
+                folio_hospitalizacion=self.folio_hospitalizacion.folio_hospitalizacion.replace('PRE-', '')
+            )
+        except Patient.DoesNotExist:
+            return None
 
+    def clean(self):
+        """Enhanced validation - FIXED VERSION"""
+        # Don't call super().clean() with cleaned_data - that's for forms, not models
+        super().clean()
+        
+        # For model validation, we work with the instance fields directly
+        # Validate POGO score
+        if self.pogo is not None and (self.pogo < 0 or self.pogo > 100):
+            raise ValidationError({'pogo': _('El valor POGO debe estar entre 0 y 100')})
+        
+        # Validate number of attempts
+        if self.numero_intentos is not None and self.numero_intentos < 1:
+            raise ValidationError({'numero_intentos': _('Debe haber al menos un intento')})
+        
+        # Validate Cormack score
+        if self.cormack is not None and (self.cormack < 1 or self.cormack > 4):
+            raise ValidationError({'cormack': _('El valor Cormack debe estar entre 1 y 4')})
+        
+        # Validate HAN classification
+        if self.clasificacion_han is not None and (self.clasificacion_han < 0 or self.clasificacion_han > 4):
+            raise ValidationError({'clasificacion_han': _('La clasificación HAN debe estar entre 0 y 4')})
+    
     def save(self, *args, **kwargs):
-        # Ensure the form is valid before saving
+        """Override save to ensure validation"""
         self.full_clean()
         return super().save(*args, **kwargs)
