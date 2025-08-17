@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from django.utils.crypto import get_random_string
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0*d9%)=-$n&$p()%_1ea6q9+#$u0_4-0xve&a8j!s)3gl9cxax'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -146,10 +149,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # Or your email provider's SMTP server
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'carlos.horacio.olivares@gmail.com'  # Your email address
-EMAIL_HOST_PASSWORD = 'yscm vwgx mste oojg'  # Your email password or app-specific password
-DEFAULT_FROM_EMAIL = 'carlos.horacio.olivares@gmail.com'
-CONTACT_EMAIL = 'carlos.horacio.olivares@gmail.com'  # Email where contact form submissions will be sent
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')  # Your email address
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')  # Your email password or app-specific password
+DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER')
+CONTACT_EMAIL = os.environ.get('EMAIL_HOST_USER')  # Email where contact form submissions will be sent
 
 
 LOGGING = {
