@@ -130,6 +130,15 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'website/static'),
 ]
 
+# Media files settings
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Add this to handle the risk assessment module
+import sys
+import os
+sys.path.append(os.path.join(BASE_DIR, 'website'))
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -153,7 +162,7 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')  # Your email address
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')  # Your email password or app-specific password
 DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER')
 CONTACT_EMAIL = os.environ.get('EMAIL_HOST_USER')  # Email where contact form submissions will be sent
-
+PROTOCOL = 'http'
 
 # settings.py
 

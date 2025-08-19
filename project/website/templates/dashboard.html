@@ -5,13 +5,57 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
 <section class="dashboard-section">
     <div class="container">
-        <div class="dashboard-filters">
-            <div class="filter-group">
+        <!-- Alert Banner -->
+        {% if critical_alerts > 0 %}
+        <div class="alert-banner critical" id="alertBanner">
+            <div class="alert-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div class="alert-text">
+                    <strong>{{ critical_alerts }} PACIENTE{{ critical_alerts|pluralize }} CON RIESGO CRÍTICO</strong>
+                    <span>Requiere atención inmediata</span>
+                </div>
+                <button class="btn btn-light btn-sm" onclick="showAlertModal()">
+                    Ver Alertas
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="header-left">
+                <h1>Dashboard Médico</h1>
+                <p>Dr. {{ user.get_full_name }} - {{ user.get_especialidad_display }}</p>
+                <div class="last-update">
+                    <i class="fas fa-clock"></i>
+                    <span id="lastUpdate">Actualizado hace unos momentos</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="alert-summary">
+                    <div class="alert-count critical" data-count="{{ critical_alerts }}">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>{{ critical_alerts }}</span>
+                        <small>Críticas</small>
+                    </div>
+                    <div class="alert-count high" data-count="{{ high_alerts }}">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ high_alerts }}</span>
+                        <small>Altas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Controls -->
+        <div class="dashboard-controls">
+            <div class="control-group">
                 <select id="dateFilter" class="filter-select">
                     <option value="7">Última Semana</option>
                     <option value="30" selected>Último Mes</option>
@@ -23,46 +67,92 @@
                     <option value="surgeries">Cirugías</option>
                     <option value="complications">Complicaciones</option>
                     <option value="airway">Vía Aérea</option>
+                    <option value="risk">Evaluación de Riesgo</option>
                 </select>
             </div>
-            <div class="filter-actions">
+            <div class="action-group">
                 <button id="refreshDashboard" class="btn btn-secondary">
                     <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+                <button id="alertsToggle" class="btn btn-warning" onclick="toggleAlertsPanel()">
+                    <i class="fas fa-bell"></i> 
+                    Alertas <span class="badge">{{ total_alerts }}</span>
                 </button>
                 <button id="exportDashboard" class="btn btn-primary">
                     <i class="fas fa-download"></i> Exportar
                 </button>
             </div>
         </div>
+
         <!-- Quick Stats Cards -->
-        <div class="quick-stats">
-            <div class="stat-card" data-aos="fade-up">
+        <div class="stats-grid">
+            <div class="stat-card primary" data-aos="fade-up">
                 <div class="stat-icon">
                     <i class="fas fa-users"></i>
                 </div>
                 <div class="stat-content">
                     <h3>Total Pacientes</h3>
                     <p class="stat-number">{{ total_patients }}</p>
+                    <span class="stat-change positive">+{{ patients_this_month }} este mes</span>
                 </div>
             </div>
             
-            <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="stat-card info" data-aos="fade-up" data-aos-delay="100">
                 <div class="stat-icon">
-                    <i class="fas fa-user-md"></i>
+                    <i class="fas fa-procedures"></i>
                 </div>
                 <div class="stat-content">
-                    <h3>Pacientes Este Mes</h3>
-                    <p class="stat-number">{{ patients_this_month }}</p>
+                    <h3>Cirugías Realizadas</h3>
+                    <p class="stat-number">{{ completed_surgeries }}</p>
+                    <span class="stat-subtitle">{{ pending_surgeries }} pendientes</span>
                 </div>
             </div>
             
-            <div class="stat-card warning" data-aos="fade-up" data-aos-delay="200">
+            <div class="stat-card success" data-aos="fade-up" data-aos-delay="200">
                 <div class="stat-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
+                    <i class="fas fa-heart-pulse"></i>
                 </div>
                 <div class="stat-content">
-                    <h3>Vía Aérea Difícil</h3>
-                    <p class="stat-number">{{ high_risk_airways }}</p>
+                    <h3>Tasa de Éxito</h3>
+                    <p class="stat-number">{{ performance_metrics.success_rate }}%</p>
+                    <span class="stat-subtitle">Resultados favorables</span>
+                </div>
+            </div>
+
+            <div class="stat-card {% if critical_patients %}warning{% else %}success{% endif %}" data-aos="fade-up" data-aos-delay="300">
+                <div class="stat-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Riesgo Promedio</h3>
+                    <p class="stat-number">{{ performance_metrics.average_risk_score }}%</p>
+                    <span class="stat-subtitle">{{ performance_metrics.high_risk_cases }} casos alto riesgo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Assessment Panel -->
+        <div class="risk-assessment-panel" data-aos="fade-up">
+            <div class="panel-header">
+                <h2><i class="fas fa-shield-alt"></i> Evaluación de Riesgo en Tiempo Real</h2>
+                <div class="risk-legend">
+                    <span class="risk-badge low">Bajo</span>
+                    <span class="risk-badge moderate">Moderado</span>
+                    <span class="risk-badge high">Alto</span>
+                    <span class="risk-badge critical">Crítico</span>
+                </div>
+            </div>
+            <div class="risk-overview">
+                <div class="risk-distribution">
+                    <canvas id="riskDistributionChart"></canvas>
+                </div>
+                <div class="risk-details">
+                    <div class="risk-summary">
+                        <h4>Distribución Actual</h4>
+                        <div class="risk-stats" id="riskStats">
+                            <!-- Risk stats will be populated by JavaScript -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -71,60 +161,265 @@
         <div class="charts-grid">
             <!-- ASA Distribution -->
             <div class="chart-card" data-aos="fade-up">
-                <h3>Distribución ASA</h3>
-                <canvas id="asaChart"></canvas>
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-bar"></i> Distribución ASA</h3>
+                    <div class="chart-controls">
+                        <button class="btn-icon" title="Información">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="asaChart"></canvas>
+                </div>
             </div>
 
             <!-- Monthly Trend -->
             <div class="chart-card" data-aos="fade-up">
-                <h3>Tendencia Mensual de Cirugías</h3>
-                <canvas id="monthlyTrendChart"></canvas>
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Tendencia Mensual</h3>
+                    <div class="chart-controls">
+                        <button class="btn-icon" title="Información">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
             </div>
 
             <!-- BMI Distribution -->
             <div class="chart-card" data-aos="fade-up">
-                <h3>Distribución IMC</h3>
-                <canvas id="bmiChart"></canvas>
+                <div class="chart-header">
+                    <h3><i class="fas fa-weight"></i> Distribución IMC</h3>
+                    <div class="chart-info">
+                        <span class="info-badge">Promedio: {{ bmi_stats.average_bmi }}</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bmiChart"></canvas>
+                </div>
             </div>
 
-            <!-- Age Distribution -->
+            <!-- Airway Assessment -->
             <div class="chart-card" data-aos="fade-up">
-                <h3>Distribución por Edad</h3>
-                <canvas id="ageChart"></canvas>
+                <div class="chart-header">
+                    <h3><i class="fas fa-lungs"></i> Evaluación Vía Aérea</h3>
+                    <div class="chart-controls">
+                        <button class="btn-icon" title="Información">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mallampatiChart"></canvas>
+                </div>
             </div>
         </div>
 
-        <!-- Complications Section -->
+        <!-- Outcomes Analysis -->
         <div class="outcomes-section">
-            <h2>Complicaciones y Resultados</h2>
+            <h2><i class="fas fa-chart-pie"></i> Análisis de Resultados</h2>
             <div class="outcomes-grid">
                 <div class="outcome-card">
-                    <h4>Tasa de Complicaciones</h4>
-                    <div class="circular-progress">
+                    <div class="outcome-header">
+                        <h4>Tasa de Complicaciones</h4>
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="circular-progress" data-percentage="{{ complications_data.complications_percentage }}">
                         <span class="progress-value">{{ complications_data.complications_percentage }}%</span>
                     </div>
+                    <div class="outcome-details">
+                        <p>{{ complications_data.with_complications }} de {{ complications_data.total_surgeries }} cirugías</p>
+                    </div>
                 </div>
+
                 <div class="outcome-card">
-                    <h4>Éxito Primera Intubación</h4>
-                    <div class="circular-progress">
+                    <div class="outcome-header">
+                        <h4>Éxito Primera Intubación</h4>
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="circular-progress" data-percentage="{{ intubation_data.success_rate }}">
                         <span class="progress-value">{{ intubation_data.success_rate }}%</span>
+                    </div>
+                    <div class="outcome-details">
+                        <p>{{ intubation_data.first_attempt }} de {{ intubation_data.total_attempts }} casos</p>
+                    </div>
+                </div>
+
+                <div class="outcome-card">
+                    <div class="outcome-header">
+                        <h4>Casos Difíciles</h4>
+                        <i class="fas fa-user-injured"></i>
+                    </div>
+                    <div class="outcome-metric">
+                        <span class="metric-value">{{ intubation_data.difficult_intubations }}</span>
+                        <span class="metric-label">≥3 intentos</span>
+                    </div>
+                    <div class="outcome-details">
+                        <p>Promedio: {{ intubation_data.average_attempts }} intentos</p>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Recent Activity & Alerts -->
+        <div class="activity-section">
+            <div class="activity-grid">
+                <!-- Recent Activity -->
+                <div class="activity-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-clock"></i> Actividad Reciente</h3>
+                        <button class="btn-link" onclick="showAllActivity()">Ver todo</button>
+                    </div>
+                    <div class="activity-list">
+                        {% for activity in recent_activity %}
+                        <div class="activity-item">
+                            <div class="activity-icon {{ activity.color }}">
+                                <i class="{{ activity.icon }}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <h5>{{ activity.title }}</h5>
+                                <p>{{ activity.description }}</p>
+                                <span class="activity-time">{{ activity.timestamp|timesince }} atrás</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No hay actividad reciente</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- High Risk Patients -->
+                <div class="activity-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Pacientes Alto Riesgo</h3>
+                        <span class="risk-count">{{ critical_patients|length }}</span>
+                    </div>
+                    <div class="high-risk-list">
+                        {% for patient in critical_patients %}
+                        <div class="risk-item" data-risk="{{ patient.risk_score }}">
+                            <div class="patient-info">
+                                <h5>{{ patient.patient_name }}</h5>
+                                <p class="folio">{{ patient.folio }}</p>
+                            </div>
+                            <div class="risk-indicator">
+                                <div class="risk-score {{ patient.risk_level|lower }}">
+                                    {{ patient.risk_score }}%
+                                </div>
+                                <button class="btn-icon" onclick="showRiskDetails('{{ patient.folio }}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-shield-alt"></i>
+                            <p>No hay pacientes de alto riesgo</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Insights -->
+        {% if performance_metrics.improvement_suggestions %}
+        <div class="insights-section" data-aos="fade-up">
+            <div class="insights-header">
+                <h2><i class="fas fa-lightbulb"></i> Recomendaciones de Mejora</h2>
+                <p>Basado en el análisis de sus casos recientes</p>
+            </div>
+            <div class="insights-grid">
+                {% for suggestion in performance_metrics.improvement_suggestions %}
+                <div class="insight-card {{ suggestion.priority }}">
+                    <div class="insight-icon">
+                        <i class="fas fa-{{ suggestion.priority|yesno:'exclamation-triangle,info-circle,lightbulb' }}"></i>
+                    </div>
+                    <div class="insight-content">
+                        <h4>{{ suggestion.title }}</h4>
+                        <p>{{ suggestion.description }}</p>
+                    </div>
+                    <div class="insight-priority">
+                        <span class="priority-badge {{ suggestion.priority }}">
+                            {{ suggestion.priority|capfirst }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </section>
+
+<!-- Alerts Panel (Sidebar) -->
+<div class="alerts-panel" id="alertsPanel">
+    <div class="panel-header">
+        <h3><i class="fas fa-bell"></i> Alertas Activas</h3>
+        <button class="btn-close" onclick="toggleAlertsPanel()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="panel-content">
+        <div class="alerts-list" id="alertsList">
+            <!-- Alerts will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Risk Details Modal -->
+<div class="modal" id="riskModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="riskModalTitle">Detalles de Evaluación de Riesgo</h3>
+            <button class="btn-close" onclick="closeRiskModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="riskModalContent">
+            <!-- Risk details will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>Actualizando datos...</p>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Make data available to dashboard.js
-    const asaData = {{ asa_distribution|safe }};
-    const monthlyData = {{ monthly_surgeries|safe }};
-    const bmiDistribution = {{ bmi_distribution|safe }};
-    const ageDistribution = {{ age_distribution|safe }};
-    const mallampatiData = {{ mallampati_data|safe }};
+    const dashboardData = {
+        asaData: {{ asa_distribution|safe }},
+        monthlyData: {{ monthly_surgeries|safe }},
+        bmiDistribution: {{ bmi_distribution|safe }},
+        ageDistribution: {{ age_distribution|safe }},
+        mallampatiData: {{ mallampati_data|safe }},
+        riskDistribution: {{ risk_distribution|safe }},
+        totalAlerts: {{ total_alerts }},
+        criticalAlerts: {{ critical_alerts }},
+        highAlerts: {{ high_alerts }}
+    };
+
+    // Configuration
+    const config = {
+        refreshInterval: 30000, // 30 seconds
+        alertCheckInterval: 10000, // 10 seconds
+        endpoints: {
+            stats: '/api/dashboard/stats/',
+            alerts: '/api/dashboard/alerts/',
+            export: '/api/dashboard/export/'
+        }
+    };
 </script>
 <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

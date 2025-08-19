@@ -560,9 +560,12 @@ class PostDuringSurgeryForm(models.Model):
         max_length=100,
         verbose_name="Especialidad"
     )
-    nombre_residente = models.CharField( #check
-        max_length=200,
-        verbose_name="Nombre del Residente"
+    nombre_residente = models.CharField(
+        max_length=200, 
+        blank=True,  # Allow blank
+        null=True,   # Allow null
+        default='',  # Default to empty string
+        verbose_name='Nombre del Residente'
     )
 
     def __str__(self):
